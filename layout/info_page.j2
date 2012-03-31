@@ -1,0 +1,31 @@
+{% extends "base.j2" %}
+<!-- Page for each Objective -->
+{% block main -%}
+    <h2>
+        {{ resource.meta.title }}
+    </h2>
+    {% filter markdown|typogrify -%}
+        {% mark post -%}
+            {% block post -%}
+            {%- endblock %}
+        {%- endmark %}
+    {%- endfilter %}
+    <nav class="post_nav">
+<a class="backlink" href="{{ content_url(resource.node.url) }}">Back to list</a>
+<a class="prev{{' disabled' if not resource.prev_by_objective }}"
+    title="{{ resource.prev_by_objective.meta.title }}"
+    {% if resource.prev_by_objective %}
+    href="{{ content_url(resource.prev_by_objective.url) }}"{% endif %}>
+    Previous
+</a>
+
+<a class="next{{' disabled' if not resource.next_by_objective }}"
+    title="{{ resource.next_by_objective.meta.title }}"
+    {% if resource.next_by_objective %}
+    href="{{ content_url(resource.next_by_objective.url) }}"{% endif %}>
+    Next
+</a>
+
+<br>
+</nav>
+{%- endblock %}

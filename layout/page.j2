@@ -1,0 +1,12 @@
+{% extends "base.j2" %}
+{% block main -%}
+    <h2>
+        {{ resource.meta.title }}
+    </h2>
+    {% filter markdown|typogrify -%}
+        {% mark post -%}
+            {% block post -%}
+            {%- endblock %}
+        {%- endmark %}
+    {%- endfilter %}
+{%- endblock %}
