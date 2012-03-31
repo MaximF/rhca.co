@@ -1,6 +1,6 @@
-RHCE.co
+RHCA.co
 -------
 
-RHCE.co is a study guide for the RHCSA and RHCE. It covers all of the objectives briefly and is in no way a dump for the exam. Is simply meant to help guide you in the right direction.
+RHCA.co is a study guide for the RHCA exams. Its my notebook as I work my way through the exams and material.
 
-The current live site is built with MediaWiki, which is great and all, but I have a new thing for Hyde... so its getting redone as a Hyde site. 
+This site is built and generated with hyde. 
