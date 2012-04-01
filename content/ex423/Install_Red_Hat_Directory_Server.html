@@ -4,10 +4,86 @@ objective: 1
 category: EX423
 ---
 
-First objective, pretty straightforward. Install Red Hat Directory Server. I am using Centos 5.6 for this, since I do not have a RHEL subscription. 
+First objective is pretty straightforward:
 
-1. Install JRE. Directory Server 8.0 requires JRE version 1.5.0. 
+**Install Red Hat Directory Server.**
 
-Since its an older version of the JRE thats required, you have to download the bin file from the archives page, and actually sign up for an account. Anyways, here it is:
+*To practice, I just fired up a VM at Amazon EC2 with Centos 5.8.*
 
-(JRE 1.5.0)[http://www.oracle.com/technetwork/java/javasebusiness/downloads/java-archive-downloads-javase5-419410.html]
+Here are the steps I took to complete the first objective:
+
+1) Install centos-ds. *Note:Directory Server 8.2 requires JRE version 1.6.0. This will be installed with the yum install*
+
+	~]# yum install centos-ds
+
+2) Run the setup script that walks us through the directory setup.
+
+    ~]# setup-ds-admin.pl
+
+Then installer will ask a number of questions, most of which the defaults are fine. I changed the domain to my own domain, but that was about it.
+
+It generates a log files in /tmp called setupXXXXX.log, which will contain all of the input you give throughout the script. 
+
+For a full list of the questions for reference, here is a link to the redhat documentation regarding this setup:
+
+[http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Installation_Guide/Installation_Guide-Preparing_for_a_Directory_Server_Installation-Installation_Overview.html](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Installation_Guide/Installation_Guide-Preparing_for_a_Directory_Server_Installation-Installation_Overview.html)
+
+3) Tune and configure the system. 
+
+*File Descriptors* - When the setup script ran, it may have spit out a bunch of warnings about your system
+
+	Your system has been scanned for potential problems, missing patches,
+	etc.  The following output is a report of the items found that need to
+	be addressed before running this software in a production
+	environment.
+
+	CentOS Directory Server system tuning analysis version 10-AUGUST-2007.
+
+	NOTICE : System is x86_64-unknown-linux2.6.18-xenU-ec2-v1.2 (1 processor).
+
+	WARNING: 615MB of physical memory is available on the system. 1024MB is recommended for best performance on large production system.
+
+	NOTICE : The net.ipv4.tcp_keepalive_time is set to 7200000 milliseconds
+	(120 minutes).  This may cause temporary server congestion from lost
+	client connections.
+
+	WARNING: There are only 1024 file descriptors (hard limit) available, which
+	limit the number of simultaneous connections.  
+
+	WARNING: There are only 1024 file descriptors (soft limit) available, which
+	limit the number of simultaneous connections.  
+
+One of the warnings was for the file descriptor limit being set too low. The Installation Guide on the RedHat site walks us through setting the proper values. 
+
+[http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html-single/Installation_Guide/index.html#Installation_Guide-Platform_Support-RHEL_Considerations](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html-single/Installation_Guide/index.html#Installation_Guide-Platform_Support-RHEL_Considerations-)
+
+First see what the settings are set at by running a sysctl -a.
+
+	~]# sysctl -a | grep file-max
+	fs.file-max = 59512
+
+Now in the /etc/sysctl.conf, add in the above max setting, but change it to the recommended number, 64000. 
+
+	~]# echo "fs.file-max = 59512" >> /etc/sysctl.conf
+
+The limits.conf file should also be altered in  /etc/security/limits.conf
+
+	~]# vim  /etc/security/limits.conf
+	// increase the number of allowed open files to 8192 by adding the following line. 
+	*        -        nofile        8192
+
+It also advises that we exit the system-auth file, for Pam Limits. 
+
+	~]# vim /etc/pam.d/system-auth
+	// add in the following
+	session 	required 	/lib/security/$ISA/pam_limits.so
+
+Then reboot the system to make sure that all the changes are applied before moving on. Now the Directory Server should be installed. 
+
+One last thing, make sure the services are set to run at boot. 
+
+	~]# chkconfig dirsrv on
+	~]# chkconfig dirsrv-admin on
+	~]# chkconfig --list | grep dir
+	dirsrv         	0:off	1:off	2:on	3:on	4:on	5:on	6:off
+	dirsrv-admin   	0:off	1:off	2:on	3:on	4:on	5:on	6:off
