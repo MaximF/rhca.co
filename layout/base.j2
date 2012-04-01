@@ -1,50 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
+
+<html lang="en">
 <head>
-  {% block starthead %}{% endblock starthead %}
+{% block starthead %}{% endblock starthead %}
+  <title>Setup SMTP Server on Postmark</title>
   <meta charset="{{ resource.meta.charset }}">
   <meta http-equiv="X-UA-Compatible" content="{{ resource.meta.compatibility }}">
 
   <title>{% block title %}{{ resource.meta.title }}{% endblock %}</title>
+ 
+
   <meta name="description" content="{{ resource.meta.description }}">
   <meta name="author" content="{{ resource.meta.author }}">
-  {% block favicons %}
-  <!-- Place favicon.ico & apple-touch-icon.png
-        in the root of your domain and delete these references -->
-  <link rel="shortcut icon" href="{{ media_url('/favicon.ico') }}">
-  <link rel="apple-touch-icon" href="{{ media_url('/apple-touch-icon.png') }}">
-  {% endblock favicons %}
-
-  {% block css %}
-  <link rel="stylesheet" href="{{ media_url('css/syle.css') }}">
+   {% block css %}
+  <!--[if IE 7]>
+  <link rel="stylesheet" href="{{ media_url('css/ie7.css') }}" media="all">
+  <![endif]-->
+  <link rel="stylesheet" href="{{ media_url('css/global.css') }}" media="all">
   {% endblock css %}
 
   {% block headjs %}
-  <!-- All JavaScript at the bottom, except for Modernizr which
-        enables HTML5 elements & feature detects -->
-    <script src="{{ media_url('js/libs/modernizr-1.7.min.js') }}"></script>
+    <!--[if IE]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
   {% endblock headjs %}
   {% block endhead %}{% endblock endhead %}
+
 </head>
 <body id="{{ resource.meta.id if resource.meta.id else resource.slug }}">
-  <a class="home" href="{{ site.content.url }}"><h1 class="title">{{ site.meta.name }}</h1></a>
+
+
+  
   {% block content %}
-  <div id="container">
+<div class="page">
+  <div class="container">
       {% block container %}
-      <div id="main" role="main">
           <header class="banner clearfix">
           {% block header -%}
+          <a class="home" href="{{ site.content.url }}"><h1 class="title">{{ site.meta.name }}</h1></a>
           {%- endblock %}
           </header>
-          <section class="content">
-          {% block main %}
-          {% endblock main %}
-          </section>
+
+        {% block nav %}
+        {% from "nav.j2" import render_nav with context %}
+        {{ render_nav(menu) }}
+        {% endblock %}  
+          <div id="docs">
+
+        {% block main %}
+        {% endblock main %}
+        </div>
+
       </div>
     {% endblock container %}
+
   </div> <!--! end of #container -->
-  <footer>
-      Powered by <a href="http://github.com/hyde/hyde">hyde</a>.
-  </footer>
+</div>
+
   {% endblock content%}
   {% block js %}
   <!-- Javascript at the bottom for fast page loading -->
@@ -57,13 +70,24 @@
   {% block scripts %}
   {% endblock scripts %}
 
-
+  <script type="text/javascript"> Cufon.now(); </script>
   <!--[if lt IE 7 ]>
     <script src="js/libs/dd_belatedpng.js"></script>
     <script>DD_belatedPNG.fix('img, .png_bg'); // Fix any <img> or .png_bg bg-images. Also, please read goo.gl/mZiyb </script>
   <![endif]-->
-
+        <div id="footer">
+          Powered by <a href="http://github.com/hyde/hyde">hyde</a>.
+        </div>
 
   {% endblock js %}
 </body>
 </html>
+
+
+
+
+
+
+
+
+    
