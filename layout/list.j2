@@ -3,10 +3,10 @@
 {% block main %}
 {% block page_title %}<h2 class="title">{{ resource.meta.title }}</h2>{% endblock %}
 {% filter markdown|typogrify -%}
-<ul class="listing clear">
+<ul class="obj">
 {% for res in resource.node.walk_resources_sorted_by_objective() %}
     {% if not res.meta.category == now %}
-        <p>Category: <b>{{ res.meta.category }}</p><b>
+        <p>Category: <b>{{ res.meta.category }}</b></p>
     {% endif %}
     {% set now = res.meta.category %}
     <li>
