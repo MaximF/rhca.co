@@ -3,3 +3,43 @@ title: Import user information from an LDIF file
 objective: 16
 category: EX423
 ---
+
+To import ldif files, there are a few different routes that are listed in the [documentation](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Populating_Directory_Databases.html).
+
+I'm going to list the first one, as I am guessing that is the one most commonly used. Links to the other sections exist below.
+
+1. **1.** [*Import from the Directory Server Console.*](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Populating_Directory_Databases.html#Importing_Data-Importing_a_Database_from_the_Console) <br><br>
+Use the Directory Server Console to append data to all of the databases, including database links. 
+	
+	When importing, the application is really just doing an ldapmodify to append, modify, or delete entries.
+	*note as stated in the docs, that LDIF file must use UTF-8 encoding, as well as contain the root suffix*.<br><br>
+
+	To open the management console, call the idm with the admin url as an arg:
+		
+		~# centos-idm-console -a http://admin.example.com:8084
+
+	Up will pop a login screen for the GUI...
+
+	<img src="/media/images/console-login.png" />
+
+	Once logged in, the server will be displayed on the left hand side, and in the "Server Group" directory is the Administration Server link. Right click and open.  
+
+	Next go to the "tasks" tab and click Import Databases.
+
+	<img src="/media/images/db-import.png" />
+
+	There is an option to select a LDIF file from the filesystem, and other options that are ok to leave default. 
+
+	<img src="/media/images/db-import2.png" />
+
+2. **2.** [*Initialize databases.*](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Populating_Directory_Databases.html#Importing_Data-Initializing_a_Database_from_the_Console) <br><br>
+The Directory Server Console can import data to one database; this method overwrites any data contained by the database.
+
+
+
+3. **3.** [*Importing data from the command-line.*](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Populating_Directory_Databases.html#Importing_Data-Importing_from_the_Command_Line) <br><br>
+Directory Server provides command-line utilities to import data.
+
+
+
+
