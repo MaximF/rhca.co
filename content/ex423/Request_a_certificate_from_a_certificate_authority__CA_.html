@@ -3,3 +3,32 @@ title: Request a certificate from a certificate authority (CA)
 objective: 6
 category: EX423
 ---
+
+### Generate the Certificate Signing Request
+
+Generating a Certificate Signing Request for our CA to sign and give us back a certificate is the first step in enabling communitcation via the [TLS protocol](http://en.wikipedia.org/wiki/Transport_Layer_Security). 
+
+1. **1.** In the Directory Server management area, choose "Manage Certificates". Then choose the Request button at the bottom to begin the request.
+
+	<br /><img src="/media/images/mng-certs.png" /><br />
+
+2. **2.** Generating the request just involved filling out that information, as you would when creating and SSL with openssl. 
+
+	<br /><img src="/media/images/certreqwiz2.png" /><br />	
+
+3. **3.** Next you are prompted for the password that was setup to protect the private key.
+
+	<br /><img src="/media/images/certreqwiz3.png" /><br />
+
+4. **4.** Finally you get your certificate request, which can be both downloaded, and copied to your clipboard (pretty handy).
+
+	<br /><img src="/media/images/certreqwiz4.png" /><br />
+
+
+### Submit your Certificate Signing Request
+
+I linked to the article on [makewhatis.com](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl) that explains the way I did the next step. You can do this a bunch of different ways, this just seemed like the most convenient. 
+
+1. **1.** Copy your key to your ca server. (In my case I just copied to clipboard, and just created the file on the ca server)
+	
+2. **2.** Sign the request with the commands in the above article, so that we get our crt file. Copy that back over to our working computer, along with the cacert from the ca server. We will need this so that RHDS regocnizes our certificate as being signed by a valid trusted CA.

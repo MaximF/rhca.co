@@ -3,3 +3,26 @@ title: Install CA-signed server certificate
 objective: 7
 category: EX423
 ---
+
+### Install the CA signed certificate
+
+At this point you should have generated a CSR, submitted it, and now should have the certificate file signed by the [CA](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl).
+
+1. **1.** In the Directory Console click "tasks" and then "Manage Certificates"
+
+	<br /><img src="/media/images/mng-certs.png" /><br />
+
+2. **2.** Click Install under the Server Certs tab, then you can either give the locate of the cert (if you actually copied it to the Directory Server) or just copy and paste the contents of it in. 
+
+
+3. **3.** Click next until you hit the password prompt, then give the password that was used to protect the private key of your RHDS.
+
+
+### Install CA Certs
+
+Whenever a certificate is used from any CA, the clients should have the CA's public key, which allows them to verify authenticity of both the CA and the CA-signed certificate. This will be provided in some way, shape, or form from the CA. In this case here, since we just setup our own [CA](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl), we just bundled our CA cert with the signed cert.
+
+1. **1.** In the same area as where the Server Certs are installed, there is a tab for CA Certs. Follow the same process to install the cert from your CA. Make sure you check the boxes that allow your clients and servers to trust the CA.
+
+
+2. **2.** Click Done, and check the certificates by choosing the "Detail" button at the bottom. 
