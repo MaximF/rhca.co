@@ -3,3 +3,67 @@ title: Configure Red Hat Directory Server for TLS communication
 objective: 5
 category: EX423
 ---
+
+In order for this objective to be practiced realistically, you need a few things, including a signed certificate from a CA. I'm sure on the exam that we will be able to just generate a CSR and get a cert back, since there are no objectives for setting up a CA. This is all speculation though, since I have yet to take the test myself. I know that openldap pukes if you try and use a self-signed certificate, without adding "TLS_REQCERT allow" into the conf file. 
+
+So to be thorough, I setup a CA on a seperate EC2 instance. Checkout the guide if you want to go that extra mile while studying. [http://makewhatis.com/2012/04/setting-up-simple-ca-openssl](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl)
+
+### Generate a certificate request
+
+
+1. **1.** First step to getting TLS working is to generate a request for a new certificate. In the Directory Server management area, choose "Manage Certificates". Then choose the Request button at the bottom to begin the request.
+
+	<br /><img src="/media/images/mng-certs.png" /><br />
+
+2. **2.** Generating the request just involved filling out that information, as you would when creating and SSL with openssl. 
+
+	<br /><img src="/media/images/certreqwiz2.png" /><br />	
+
+3. **3.** Next you are prompted for the password that was setup to protect the private key.
+
+	<br /><img src="/media/images/certreqwiz3.png" /><br />
+
+4. **4.** Finally you get your certificate request, which can be both downloaded, and copied to your clipboard (pretty handy).
+
+	<br /><img src="/media/images/certreqwiz4.png" /><br />
+
+
+### Submit your csr
+
+I linked to the article on [makewhatis.com](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl) that explains the way I did the next step. You can do this a bunch of different ways, this just seemed like the easiest and most accurate. 
+
+1. **1.** Copy your key to your ca server. (In my case I just copied to clipboard, and just created the file on the ca server)
+
+	
+2. **2.** Sign the request with the commands in the above article, so that we get our crt file. Copy that back over to our working computer, along with the cacert from the ca server. We will need this so that RHDS regocnizes our certificate as being signed by a valid trusted CA.
+
+
+### Install the certificates
+
+
+1. **1.** In the Directory Console click "tasks" and then "Manage Certificates"
+
+	<br /><img src="/media/images/mng-certs.png" /><br />
+
+2. **2.** Click Install under the Server Certs tab, then you can either give the locate of the cert (if you actually copied it to the Directory Server) or just paste it in, which is what I did. 
+
+
+3. **3.** Click next until you hit the password prompt, then give the password that was used to protect the private key of your RHDS.
+
+
+### Install CA Certs
+
+
+1. **1.** In the same area as where the Server Certs are installed, there is a tab for CA Certs. Follow the same process to install the cert from your CA. Make sure you check the boxes that allow your clients and servers to trust the CA.
+
+
+2. **2.** Click Done, and check the certificates by choosing the "Detail" button at the bottom. 
+
+
+## Enable TLS
+
+In the Directory Server Console, choose the Configuration tab, and highlight the server name on the left. Choose encryption and check the box for SSL and "Use this cipher family: RSA". You should see your certificate in there now, but you may have to reconnect to see it. At least I did, for some reason it wouldnt show up until I reopened the console. 
+
+Once you are able to see your certificate and choose it, then you can restart your Directory Server. From the Tasks tab choose the "Restart Directory Server" option, and wait for it to restart. 
+
+Now configure your clients to use TLS, and make sure they have the CA certs installed, and you should be connecting over TLS.
