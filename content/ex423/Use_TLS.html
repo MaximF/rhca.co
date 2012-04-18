@@ -4,7 +4,7 @@ objective: 9
 category: EX423
 ---
 
-Can we be more vague? Use TLS. So I'm guessing this means to secure both the directory server, as well as the admin, with certificates from our CA. That's what I'm running with. But who knows. 
+This is kind of a vague objective. Use TLS. So I'm guessing this means to secure both the directory server, as well as the admin, with certificates from our CA. That's what I'm running with. But who knows. 
 
 If you look back on [Objective: Configure Red Hat Directory Server for TLS communication](http://rhca.co/ex423/Configure_Red_Hat_Directory_Server_for_TLS_communication.html) this was already kinda covered. So now all thats left is some client side connecting. 
 
@@ -28,3 +28,6 @@ note: if you didn't read the other page on this, here it is: [http://rhca.co/ex4
 (7) Close the admin, restart dirsrv-admin, and relaunch the admin (this time using https://)<br>
 
 That's it, admin is setup for TLS as well. So now there does not exists a directory service that you cannot talk to with TLS, both admin and application are secured.
+
+
+

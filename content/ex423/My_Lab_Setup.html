@@ -1,0 +1,42 @@
+============
+My Lab Setup
+============
+
+VirtualBox VM Centos 5.8
+------------------------
+desktop01.makewhatis.com
+
+
+EC2 Centos 5.8 (mircro)
+-----------------------
+client01.makewhatis.com - 10.171.7.136  (running Gnome Desktop via VNC)
+client02.makewhatis.com - 184.169.152.142
+kerberos.makewhatis.com - 184.169.141.95
+dc03.makewhatis.com - 184.169.141.14
+dc04.makewhatis.com - 184.169.141.47
+nis.makewhatis.com - 
+
+
+EC2 Fedora release 16 (micro)
+-----------------------------
+ca.makewhatis.com - 184.169.147.12
+
+
+=============
+My Excercises
+=============
+
+## to start run your awesome lab start tool. BOOM!
+
+# on first dc configure RHDS http://rhca.co/ex423/Install_Red_Hat_Directory_Server.html
+1. Install centos-ds centos-ds-admin
+2. Configure iptables
+3. Set SELinux to Enforcing
+4. Setup Certs
+
+# on client 1
+1. install pam_ldap
+2. configure ldap auth
+
+
+

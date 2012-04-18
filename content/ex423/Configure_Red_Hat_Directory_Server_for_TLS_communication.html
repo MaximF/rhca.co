@@ -16,10 +16,30 @@ Although this is one of the steps to getting this working, its actually covered 
 
 This is also covered in another objective. Its a prereq to getting this one working, so check that out at: [Install CA-signed server certificate](http://rhca.co/ex423/Install_CA-signed_server_certificate.html)
 
-### Enable TLS
+### Enable TLS on the Directory Admin
 
 Finally, TLS can be enabled. In the Directory Server Console, choose the Configuration tab, and highlight the server name on the left. Choose encryption and check the box for SSL and "Use this cipher family: RSA". You should see your certificate in there now, but you may have to reconnect to see it. At least I did, for some reason it wouldnt show up until I reopened the console. 
 
 Once you are able to see your certificate and choose it, then you can restart your Directory Server. From the Tasks tab choose the "Restart Directory Server" option, and wait for it to restart. 
 
 Now configure your clients to use TLS, and make sure they have the CA certs installed, and you should be connecting over TLS.
+
+### Enable TLS on a client
+
+To enable TLS on the client, all that needs to happen is the cacert be imported, and openldap be told where to find it. 
+
+CA certs go in /etc/openldap/cacerts/. Whatever you name your CA cert, make sure you update the ldap.conf.
+
+    [root@client01 openldap]# vim /etc/openldap/ldap.conf
+
+Add
+
+    BASE    dc=makewhatis,dc=com
+    URI ldap://dc03.makewhatis.com
+    TLS_CACERT /etc/openldap/cacerts/cacert.crt
+
+* Note: if you dont do tell openldap where to find the cacert, then when trying to do an ldapsearch with TLS enabled, -ZZ, then you will get the following error: *
+
+    [root@client01 openldap]# ldapsearch -ZZ -x
+    ldap_start_tls: Connect error (-11)
+    additional info: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
