@@ -38,7 +38,7 @@ Add
     URI ldap://dc03.makewhatis.com
     TLS_CACERT /etc/openldap/cacerts/cacert.crt
 
-* Note: if you dont do tell openldap where to find the cacert, then when trying to do an ldapsearch with TLS enabled, -ZZ, then you will get the following error: *
+*Note: if you dont do tell openldap where to find the cacert, then when trying to do an ldapsearch with TLS enabled, -ZZ, then you will get the following error*:
 
     [root@client01 openldap]# ldapsearch -ZZ -x
     ldap_start_tls: Connect error (-11)
