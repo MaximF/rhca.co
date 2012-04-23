@@ -4,16 +4,22 @@ objective: 14
 category: EX423
 ---
 
-Migrating users from NIS to LDAP. 
----------------------------------
-
 ###  Setup NIS Server
 
-I used a server called nis.makewhatis.com on EC2, in order to setup a fake nis instance to practice moving users. I haven't really had to deal with NIS at all at a job yet, so that part is all new. 
+For this I setup 2 servers, a NIS server, and a NIS client. I just spun these up on EC2 for a few hours to get this all working, so that I can replicate the task. For myself, I have never really messed with NIS, apart from what I learned studying for the first exams. 
+
+Ill go over my NIS setup first. Since that was new, I just wrote it all down as well..
+
+My Two hosts were:
+
+* nis.makewhatis.com
+* nis-client.makewhatis.com
 
 I used this guide to set it up, changing the info for myself. [http://www.server-world.info/en/note?os=CentOS_5&p=nis](http://www.server-world.info/en/note?os=CentOS_5&p=nis)
 
 *** Also notice that throughout this I use the private IPS for my EC2 instances. For some reason NIS didn't want to work with my elastic ips. So use the private ips. Just keep in mind that these get reset each time you destroy and rebuild your environment. ***
+
+#### Starting with with server
 
     [root@nis ~]# yum -y install ypserve
     [root@nis ~]# ypdomainname nis.makewhatis.com
@@ -95,8 +101,7 @@ For this to work on EC2 with my firewalls, I had to bind the service to a specif
     #added 
     YPSERV_ARGS="--port 647"
 
-
-Installing the client. I setup a nis-client.makewhatis.com host to test this out on. First time I did this on my LDAP client and did something funky to authentication, so this time I just used another instance for a couple hours. 
+### Setting up the client. 
 
 Again I just used steps found on the same site, targeted for client setup. [http://www.server-world.info/en/note?os=CentOS_5&p=nis&f=2](http://www.server-world.info/en/note?os=CentOS_5&p=nis&f=2)
 
@@ -178,41 +183,16 @@ We can even change the password of our user from NIS, on the client.
 
     [david@nis-client ~]$ exit
 
-### Export users to ldif
-
-I used the following documentation to study for this part, [http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s2-ldap-migrate.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s2-ldap-migrate.html), which actually just pointed me to `/usr/share/openldap/migration/`. This directory is part of the `openldap-servers` package, so without that package installed, you will not see it. Rather than install the package, I just downloaded the scripts themselves from their source, [http://www.padl.com/download/MigrationTools.tgz](http://www.padl.com/download/MigrationTools.tgz).
-These scripts give a good overview of how use them, but don't really go into detail on exporting your users in the first place, and what ldap classes to use. I found this helpful guide here that walks you through that part. [http://wiki.eri.ucsb.edu/sysadm/LDAP-RedHat_DS#Server_Installation_and_config](http://wiki.eri.ucsb.edu/sysadm/LDAP-RedHat_DS#Server_Installation_and_config)
-
-On the NIS server:
-
-    [root@nis ~]# mkdir `date +%Y%m%d`
-    [root@nis ~]# cd /usr/share/openldap/
-    [root@nis migration]# ./migrate_base.pl > ~/`date +%Y%m%d`/base-schema.ldif
-    [root@nis migration]# ./migrate_passwd.pl /etc/passwd ~/`date +%Y%m%d`/passwd-data.ldif       
-    [root@nis migration]# ./migrate_group.pl /etc/group /tmp/groups-data.ldif
-
-Then to get auto.home for home directory mapping, if it exists. I didnt have this on mine, but since it was in the guide I figured I would just add it in case.
-
-    cat auto.home | grep -v ^#  | grep ^[0-9A-Za-z] | sort > /tmp/`date +%Y%m$d`/auto.home
-
-Copy files to Directory Server.
-
-### Double check the acls making sure everyone cannot read password.
-
-Main thing that needs to be done is to make sure other users cant just view password and shadow info. To do this we can just edit the ACLs in the nifty editor RHDS gives. If you dont do this, well....
-
-* [http://mwiki.yyovkov.net/index.php/Install_LDAP_port_389_on_CentOS#Adding_ACLs](http://mwiki.yyovkov.net/index.php/Install_LDAP_port_389_on_CentOS#Adding_ACLs)
-
-
-///So most sites recommend adding acls to the userPassword attribute, but since the NIS export also throws in shadow info, we should add it on there as well. 
 
 ### Install openldap clients on the main RHDS
 
-Also, openldap-clients will have to be installed if you want to use the openldap cli tools. 
+`openldap-clients` will have to be installed if you want to use the openldap cli tools. 
 
     [root@dc03 ~]# yum install -y openldap-clients
 
 ### Using migration scripts on the Directory Server
+
+I used the following documentation to study for this part, [http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s2-ldap-migrate.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s2-ldap-migrate.html), which actually just pointed me to `/usr/share/openldap/migration/`. This directory is part of the `openldap-servers` package, so without that package installed, you will not see it. Rather than install the package, I just downloaded the scripts themselves from their source, [http://www.padl.com/download/MigrationTools.tgz](http://www.padl.com/download/MigrationTools.tgz).
 
     wget -O /usr/share/openldap/migration.tgz http://www.padl.com/download/MigrationTools.tgz
     cd /usr/share/openldap/ ; tar xvzf migration.tgz
@@ -242,7 +222,7 @@ I started by editing the `migrate_common.ph` to contain my info in the variables
     $EXTENDED_SCHEMA = 1;
 
 
-There are different scripts for different files and formats that reside on your linux system. 
+There are different scripts for different files, formats, and services that reside on your linux system. I pulled in the breakdown from [http://www.padl.com/OSS/MigrationTools.html](http://www.padl.com/OSS/MigrationTools.html)
 
 **migrate_base.pl** creates naming context entries, including subordinate contexts such as ou=people and ou=devices.<br>
 **migrate_aliases.pl** migrates aliases in /etc/aliases to entries conforming to the rfc822MailGroup schema. Organizations who have deployed LDAP-based messaging solutions, such as Netscape's Messaging Server, may wish to use a different schema for representing mail aliases. Ypldapd does not use X.500 groups (such as groupOfUniqueNames) for mail alias expansion because flattening an arbitrarily nested group at runtime may be expensive. (It is possible to write a ypldapd plug-in to support such a schema, however.)<br>
@@ -256,6 +236,23 @@ There are different scripts for different files and formats that reside on your 
 **migrate_netgroup_byuser.pl** migrates the netgroup.byuser map. It requires revnetgroup.<br>
 **migrate_netgroup_byhost.pl** migrates the netgroup.byhost map. It requires revnetgroup.<br>
 **migrate_rpc.pl** migrates RPCs in /etc/rpc<br>
+
+
+### Exporting my NIS users and groups
+
+On the NIS server I used the scripts to dump my NIS info into ldif files:
+
+    [root@nis ~]# mkdir `date +%Y%m%d`
+    [root@nis ~]# cd /usr/share/openldap/
+    [root@nis migration]# ./migrate_base.pl > ~/`date +%Y%m%d`/base-schema.ldif
+    [root@nis migration]# ./migrate_passwd.pl /etc/passwd ~/`date +%Y%m%d`/passwd-data.ldif       
+    [root@nis migration]# ./migrate_group.pl /etc/group ~/`date +%Y%m%d`/groups-data.ldif
+
+Then to get auto.home for home directory mapping, if it exists. I didnt have this on mine, but since it was in the guide I figured I would just add it just for good measure.
+
+    cat auto.home | grep -v ^#  | grep ^[0-9A-Za-z] | sort > /tmp/`date +%Y%m$d`/auto.home
+
+Copy files to Directory Server.
 
 ### Importing the ldif files created on the NIS server to RHDS.
 
@@ -276,6 +273,12 @@ Next I'll add the passwd export with the same options. And following that the gr
     
     [root@dc03 ~]# ldapadd -Z -x -W -c -v -D "cn=Directory Manager" -f ~/passwd-data.ldif
     [root@dc03 ~]# ldapadd -Z -x -W -c -v -D "cn=Directory Manager" -f ~/group-data.ldif
+
+### Double check the acls making sure everyone cannot read password.
+
+Main thing that needs to be done is to make sure other users cant just view password and shadow info. To do this we can just edit the ACLs in the nifty editor RHDS gives. If you dont do this, well then people could just query the ldap server and get the hashes, no good. This happend to me by default, but I read the actually step on a number of sites, so I figure its best to just get in the habit of doing it. Here is the link to a guide that breaks that down.
+
+* [http://mwiki.yyovkov.net/index.php/Install_LDAP_port_389_on_CentOS#Adding_ACLs](http://mwiki.yyovkov.net/index.php/Install_LDAP_port_389_on_CentOS#Adding_ACLs)
 
 ### Make authentication work on clients
 
