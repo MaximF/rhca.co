@@ -4,91 +4,88 @@ objective: 12
 category: EX423
 ---
 
+This objective is a work in progress.
 
-http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Server.html
+[http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Server.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Server.html)
 
-install kerberos
-----------------
-yum install krb5-server krb5-workstation
+###Install kerberos
 
+	yum install krb5-server krb5-workstation
 
+###update configs with appropriate hosts
 
-update configs with appropriate hosts
----------------
-vim /etc/krb5.conf
-
-
-Create key/initialize db
-----------------
-[root@dc2 ~]# /usr/kerberos/sbin/kdb5_util create -r DC2.MAKEWHATIS.COM -s
-Loading random data
-Initializing database '/var/kerberos/krb5kdc/principal' for realm 'DC2.MAKEWHATIS.COM',
-master key name 'K/M@DC2.MAKEWHATIS.COM'
-You will be prompted for the database Master Password.
-It is important that you NOT FORGET this password.
-Enter KDC database master key: 
-Re-enter KDC database master key to verify: 
-
-Edit the appropriate things
------------------------
-[root@dc2 ~]# vim /var/kerberos/krb5kdc/kdc.conf 
-[root@dc2 ~]# vim /var/kerberos/krb5kdc/kadm5.acl
-
-start the kadmin.local
-------------------------
-[root@dc2 ~]# /usr/kerberos/sbin/kadmin.local
-Authenticating as principal root/admin@DC2.MAKEWHATIS.COM with password.
+	vim /etc/krb5.conf
 
 
-Create principal
--------------------------
-kadmin.local:  add_principal test01@DC2.MAKEWHATIS.COM
-WARNING: no policy specified for test01@DC2.MAKEWHATIS.COM; defaulting to no policy
-Enter password for principal "test01@DC2.MAKEWHATIS.COM": 
-Re-enter password for principal "test01@DC2.MAKEWHATIS.COM": 
-Principal "test01@DC2.MAKEWHATIS.COM" created.
+###Create key/initialize db
+
+	[root@dc2 ~]# /usr/kerberos/sbin/kdb5_util create -r DC2.MAKEWHATIS.COM -s
+	Loading random data
+	Initializing database '/var/kerberos/krb5kdc/principal' for realm 'DC2.MAKEWHATIS.COM',
+	master key name 'K/M@DC2.MAKEWHATIS.COM'
+	You will be prompted for the database Master Password.
+	It is important that you NOT FORGET this password.
+	Enter KDC database master key: 
+	Re-enter KDC database master key to verify: 
+
+###Edit the appropriate things
+
+	[root@dc2 ~]# vim /var/kerberos/krb5kdc/kdc.conf 
+	[root@dc2 ~]# vim /var/kerberos/krb5kdc/kadm5.acl
+
+###start the kadmin.local
+
+	[root@dc2 ~]# /usr/kerberos/sbin/kadmin.local
+	Authenticating as principal root/admin@DC2.MAKEWHATIS.COM with password.
 
 
-List principals
------------------------------
-kadmin.local:  list_principals
-K/M@DC2.MAKEWHATIS.COM
-test01@DC2.MAKEWHATIS.COM
-kadmin/admin@DC2.MAKEWHATIS.COM
-kadmin/changepw@DC2.MAKEWHATIS.COM
-kadmin/dc2.makewhatis.com@DC2.MAKEWHATIS.COM
-kadmin/history@DC2.MAKEWHATIS.COM
-krbtgt/DC2.MAKEWHATIS.COM@DC2.MAKEWHATIS.COM
-root/admin@DC2.MAKEWHATIS.COM
+###Create principal
+
+	kadmin.local:  add_principal test01@DC2.MAKEWHATIS.COM
+	WARNING: no policy specified for test01@DC2.MAKEWHATIS.COM; defaulting to no policy
+	Enter password for principal "test01@DC2.MAKEWHATIS.COM": 
+	Re-enter password for principal "test01@DC2.MAKEWHATIS.COM": 
+	Principal "test01@DC2.MAKEWHATIS.COM" created.
+
+###List principals
+
+	kadmin.local:  list_principals
+	K/M@DC2.MAKEWHATIS.COM
+	test01@DC2.MAKEWHATIS.COM
+	kadmin/admin@DC2.MAKEWHATIS.COM
+	kadmin/changepw@DC2.MAKEWHATIS.COM
+	kadmin/dc2.makewhatis.com@DC2.MAKEWHATIS.COM
+	kadmin/history@DC2.MAKEWHATIS.COM
+	krbtgt/DC2.MAKEWHATIS.COM@DC2.MAKEWHATIS.COM
+	root/admin@DC2.MAKEWHATIS.COM
+
+###Get Details Principal
+
+	kadmin.local:  get_principal test01
+	Principal: test01@DC2.MAKEWHATIS.COM
+	Expiration date: [never]
+	Last password change: Sat Apr 14 17:14:07 EDT 2012
+	Password expiration date: [none]
+	Maximum ticket life: 1 day 00:00:00
+	Maximum renewable life: 0 days 00:00:00
+	Last modified: Sat Apr 14 17:14:07 EDT 2012 (root/admin@DC2.MAKEWHATIS.COM)
+	Last successful authentication: [never]
+	Last failed authentication: [never]
+	Failed password attempts: 0
+	Number of keys: 2
+	Key: vno 1, Triple DES cbc mode with HMAC/sha1, no salt
+	Key: vno 1, DES cbc mode with CRC-32, no salt
+	Attributes:
+	Policy: [none]
 
 
-Get Details Principal
--------------------------
-kadmin.local:  get_principal test01
-Principal: test01@DC2.MAKEWHATIS.COM
-Expiration date: [never]
-Last password change: Sat Apr 14 17:14:07 EDT 2012
-Password expiration date: [none]
-Maximum ticket life: 1 day 00:00:00
-Maximum renewable life: 0 days 00:00:00
-Last modified: Sat Apr 14 17:14:07 EDT 2012 (root/admin@DC2.MAKEWHATIS.COM)
-Last successful authentication: [never]
-Last failed authentication: [never]
-Failed password attempts: 0
-Number of keys: 2
-Key: vno 1, Triple DES cbc mode with HMAC/sha1, no salt
-Key: vno 1, DES cbc mode with CRC-32, no salt
-Attributes:
-Policy: [none]
+###Add host principal and extract into local keytab
 
+[http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Client.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Client.html)
 
-Add host principal and extract into local keytab
--------------------------------------------------
-http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Client.html
-
-kadmin.local:  addprinc -randkey host/dc2.makewhatis.com
-WARNING: no policy specified for host/dc2.makewhatis.com@DC2.MAKEWHATIS.COM; defaulting to no policy
-Principal "host/dc2.makewhatis.com@DC2.MAKEWHATIS.COM" created.
-kadmin.local:  ktadd -k /etc/krb5.keytab host/dc2.makewhatis.com
-Entry for principal host/dc2.makewhatis.com with kvno 3, encryption type Triple DES cbc mode with HMAC/sha1 added to keytab WRFILE:/etc/krb5.keytab.
-Entry for principal host/dc2.makewhatis.com with kvno 3, encryption type DES cbc mode with CRC-32 added to keytab WRFILE:/etc/krb5.keytab.
+	kadmin.local:  addprinc -randkey host/dc2.makewhatis.com
+	WARNING: no policy specified for host/dc2.makewhatis.com@DC2.MAKEWHATIS.COM; defaulting to no policy
+	Principal "host/dc2.makewhatis.com@DC2.MAKEWHATIS.COM" created.
+	kadmin.local:  ktadd -k /etc/krb5.keytab host/dc2.makewhatis.com
+	Entry for principal host/dc2.makewhatis.com with kvno 3, encryption type Triple DES cbc mode with HMAC/sha1 added to keytab WRFILE:/etc/krb5.keytab.
+	Entry for principal host/dc2.makewhatis.com with kvno 3, encryption type DES cbc mode with CRC-32 added to keytab WRFILE:/etc/krb5.keytab.
