@@ -30,13 +30,15 @@ Now you should be able to run
 
 This is a nice one liner. You could also hit system-config-authentication to do this, or system-config-authentication-tui, but I like just using the cmd tools.
 
-	[root@client01 ~]# authconfig --enableldap --enableldapauth --disablenis --enablecache --ldapserver=dc03.makewhatis.com --ldapbasedn=dc=makewhatis,dc=com --updateall
+	[root@client01 ~]# authconfig --enableldap --enableldapauth \
+	--disablenis --enablecache --ldapserver=dc03.makewhatis.com \
+	--ldapbasedn=dc=makewhatis,dc=com --updateall
 
 If this is a system that you want home directories auto created, then you need to add the pam module for that to system-auth. An easy way to find it is with man -k
 
 	[root@client01 ~]# man -k pam_ | grep home
 	pam_mkhomedir (8)    - PAM module to create users home directory
 
-In `pam_mkhomedir` you can see instructions on usage.
+On `pam_mkhomedir` man page you can see instructions on usage.
 
 [Red Hat Docs on PAM](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html-single/Deployment_Guide/index.html#ch-pam)
