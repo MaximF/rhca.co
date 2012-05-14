@@ -21,7 +21,7 @@ I used this guide to set it up, changing the info for myself. [http://www.server
 
 #### Starting with with server
 
-    [root@nis ~]# yum -y install ypserve
+    [root@nis ~]# yum -y install ypserv
     [root@nis ~]# ypdomainname nis.makewhatis.com
     [root@nis ~]# vim /etc/sysconfig/network
     NETWORKING=yes
@@ -258,12 +258,12 @@ Copy files to Directory Server.
 
 Now to add the entries that were exported from NIS, which we can do with the openldap ldapadd command. ldapadd, if you check out the man page, is just a link to ldapmodify w/ the -a flag implied. There are quite a few options for ldapadd, and we are going to use a handful of them. 
 
-*-Z*: I use the -Z (not -ZZ because the operation may have errors, which are common when importing).
-*-x*: use simple auth instead of SASL
-*-W*: Prompt for password
-*-c*: Continue even on error, reporting errors but not stopping the entire operation
-*-v*: Verbose
-*-D*: Specify the directory manager, which is implied, but I throw it in there for good habit.
+**-Z**: I use the -Z (not -ZZ because the operation may have errors, which are common when importing).<br>
+**-x**: use simple auth instead of SASL<br>
+**-W**: Prompt for password<br>
+**-c**: Continue even on error, reporting errors but not stopping the entire operation<br>
+**-v**: Verbose<br>
+**-D**: Specify the directory manager, which is implied, but I throw it in there for good habit.<br>
 
 First I'll import the base.ldif that I first generated.
 
