@@ -195,11 +195,13 @@ Now we add the server as a ds
 
 Couple things to do here to get this to work properly. 
 
-1. Configure the two sysconfig files 
+**First:** Configure the two sysconfig files.
+
+in /etc/sysconfig/dirsvr and /etc/sysconfig/dirsrv-admin
 
     KRB5_KTNAME=/etc/dirsrv/ds.keytab ; export KRB5_KTNAME
 
-2. setup SASL/GSSAPI maps as described in the above [docs.redhat.com article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html)
+**Second:** setup SASL/GSSAPI maps as described in the above [docs.redhat.com article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html)
 
 Also as reference [http://www.openldap.org/doc/admin24/sasl.html#Mapping Authentication Identities](http://www.openldap.org/doc/admin24/sasl.html#Mapping Authentication Identities)
 
