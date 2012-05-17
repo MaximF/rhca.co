@@ -6,86 +6,212 @@ category: EX423
 
 This objective is a work in progress.
 
-[http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Server.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Server.html)
+[http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-server.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-server.html)
 
 ###Install kerberos
 
-	yum install krb5-server krb5-workstation
+    yum install krb5-libs krb5-server krb5-workstation
 
 ###update configs with appropriate hosts
 
-	vim /etc/krb5.conf
+Edit krb5.conf to look similar to this (replaced appropriate values with my domain):
 
+    [root@kdc ~]# vim /etc/krb5.conf
+
+
+    [logging]
+     default = FILE:/var/log/krb5libs.log
+     kdc = FILE:/var/log/krb5kdc.log
+     admin_server = FILE:/var/log/kadmind.log
+
+    [libdefaults]
+     default_realm = MAKEWHATIS.LOCAL
+     dns_lookup_realm = false
+     dns_lookup_kdc = false
+     ticket_lifetime = 24h
+     forwardable = yes
+
+    [realms]
+     MAKEWHATIS.LOCAL = {
+      kdc = kdc.makewhatis.local:88
+      admin_server = kdc.makewhatis.local:749
+      default_domain = makewhatis.local
+     }
+
+    [domain_realm]
+     .makewhatis.local = MAKEWHATIS.LOCAL
+     makewhatis.local = MAKEWHATIS.LOCAL
+
+    [appdefaults]
+     pam = {
+       debug = false
+       ticket_lifetime = 36000
+       renew_lifetime = 36000
+       forwardable = true
+       krb4_convert = false
+       validate = true
+     }
+
+And the kdc.conf file:
+
+    [root@kdc ~]# vim /var/kerberos/krb5kdc/kdc.conf
+
+    [kdcdefaults]
+     v4_mode = nopreauth
+     kdc_tcp_ports = 88
+
+    [realms]
+     MAKEWHATIS.LOCAL = {
+      #master_key_type = des3-hmac-sha1
+      acl_file = /var/kerberos/krb5kdc/kadm5.acl
+      dict_file = /usr/share/dict/words
+      admin_keytab = /var/kerberos/krb5kdc/kadm5.keytab
+      supported_enctypes = aes256-cts:normal aes128-cts:normal des3-hmac-sha1:normal arcfour-hmac:normal des-hmac-sha1:normal des-cbc-md5:normal des-cbc-crc:normal des-cbc-crc:v4 des-cbc-crc:afs3
+     }
+
+
+###Configure Firewall Rules for KDC
+
+    [root@kdc ~]# iptables -N KDC
+    [root@kdc ~]# iptables -A KDC -p udp --dport 88 -j ACCEPT
+    [root@kdc ~]# iptables -A KDC -p tcp --dport 88 -j ACCEPT
+    [root@kdc ~]# iptables -A KDC -p udp --dport 464 -j ACCEPT
+    [root@kdc ~]# iptables -A KDC -p tcp --dport 749 -j ACCEPT
+    [root@kdc ~]# service iptables save
 
 ###Create key/initialize db
 
-	[root@dc2 ~]# /usr/kerberos/sbin/kdb5_util create -r DC2.MAKEWHATIS.COM -s
-	Loading random data
-	Initializing database '/var/kerberos/krb5kdc/principal' for realm 'DC2.MAKEWHATIS.COM',
-	master key name 'K/M@DC2.MAKEWHATIS.COM'
-	You will be prompted for the database Master Password.
-	It is important that you NOT FORGET this password.
-	Enter KDC database master key: 
-	Re-enter KDC database master key to verify: 
+''The -s switch forces creation of a stash file in which the master server key is stored.''
 
-###Edit the appropriate things
+    [root@kdc ~]# /usr/kerberos/sbin/kdb5_util create -r MAKEWHATIS.LOCAL -s
+    Loading random data
+    Initializing database '/var/kerberos/krb5kdc/principal' for realm 'MAKEWHATIS.LOCAL',
+    master key name 'K/M@MAKEWHATIS.LOCAL'
+    You will be prompted for the database Master Password.
+    It is important that you NOT FORGET this password.
+    Enter KDC database master key: 
+    Re-enter KDC database master key to verify: 
 
-	[root@dc2 ~]# vim /var/kerberos/krb5kdc/kdc.conf 
-	[root@dc2 ~]# vim /var/kerberos/krb5kdc/kadm5.acl
+Edit the /var/kerberos/krb5kdc/kadm5.acl which sets the acls for admin.
+
+    [root@kdc ~]# vim /var/kerberos/krb5kdc/kadm5.acl
+
+    */admin@MAKEWHATIS.LOCAL        *
 
 ###start the kadmin.local
 
-	[root@dc2 ~]# /usr/kerberos/sbin/kadmin.local
-	Authenticating as principal root/admin@DC2.MAKEWHATIS.COM with password.
+    [root@kdc ~]# /usr/kerberos/sbin/kadmin.local
+    Authenticating as principal root/admin@MAKEWHATIS.LOCAL with password.
 
 
 ###Create principal
 
-	kadmin.local:  add_principal test01@DC2.MAKEWHATIS.COM
-	WARNING: no policy specified for test01@DC2.MAKEWHATIS.COM; defaulting to no policy
-	Enter password for principal "test01@DC2.MAKEWHATIS.COM": 
-	Re-enter password for principal "test01@DC2.MAKEWHATIS.COM": 
-	Principal "test01@DC2.MAKEWHATIS.COM" created.
+    kadmin.local:  add_principal david/admin@MAKEWHATIS.LOCAL
+    WARNING: no policy specified for david/admin@MAKEWHATIS.LOCAL; defaulting to no policy
+    Enter password for principal "david/admin@MAKEWHATIS.LOCAL": 
+    Re-enter password for principal "david/admin@MAKEWHATIS.LOCAL": 
+    Principal "david/admin@MAKEWHATIS.LOCAL" created.
+
+''You can also just run that in one command, without using the kerberos prompt''
+    
+    [root@kdc ~]# /usr/kerberos/sbin/kadmin.local -q "addprinc david/admin"
+
+
+###Start Services
+
+    [root@kdc ~]# service krb5kdc start
+    [root@kdc ~]# service kadmin start
+    [root@kdc ~]# service krb524 start
+
+###Configure boot time start
+
+    [root@kdc ~]# chkconfig krb5kdc on
+    [root@kdc ~]# chkconfig kadmin on
+    [root@kdc ~]# chkconfig krb524 on
+
+The kadmin tool allows us to query the kerberos db for principals, hosts, etc. Running kadmin.local will log you in right away on the KDC.    
 
 ###List principals
 
-	kadmin.local:  list_principals
-	K/M@DC2.MAKEWHATIS.COM
-	test01@DC2.MAKEWHATIS.COM
-	kadmin/admin@DC2.MAKEWHATIS.COM
-	kadmin/changepw@DC2.MAKEWHATIS.COM
-	kadmin/dc2.makewhatis.com@DC2.MAKEWHATIS.COM
-	kadmin/history@DC2.MAKEWHATIS.COM
-	krbtgt/DC2.MAKEWHATIS.COM@DC2.MAKEWHATIS.COM
-	root/admin@DC2.MAKEWHATIS.COM
+    kadmin.local:  list_principals
+    K/M@MAKEWHATIS.LOCAL
+    test01@MAKEWHATIS.LOCAL
+    kadmin/admin@MAKEWHATIS.LOCAL
+    kadmin/changepw@MAKEWHATIS.LOCAL
+    kadmin/MAKEWHATIS.LOCAL@MAKEWHATIS.LOCAL
+    kadmin/history@MAKEWHATIS.LOCAL
+    krbtgt/MAKEWHATIS.LOCAL@MAKEWHATIS.LOCAL
+    root/admin@MAKEWHATIS.LOCAL
 
 ###Get Details Principal
 
-	kadmin.local:  get_principal test01
-	Principal: test01@DC2.MAKEWHATIS.COM
-	Expiration date: [never]
-	Last password change: Sat Apr 14 17:14:07 EDT 2012
-	Password expiration date: [none]
-	Maximum ticket life: 1 day 00:00:00
-	Maximum renewable life: 0 days 00:00:00
-	Last modified: Sat Apr 14 17:14:07 EDT 2012 (root/admin@DC2.MAKEWHATIS.COM)
-	Last successful authentication: [never]
-	Last failed authentication: [never]
-	Failed password attempts: 0
-	Number of keys: 2
-	Key: vno 1, Triple DES cbc mode with HMAC/sha1, no salt
-	Key: vno 1, DES cbc mode with CRC-32, no salt
-	Attributes:
-	Policy: [none]
+    kadmin.local:  get_principal test01
+    Principal: test01@MAKEWHATIS.LOCAL
+    Expiration date: [never]
+    Last password change: Sat Apr 14 17:14:07 EDT 2012
+    Password expiration date: [none]
+    Maximum ticket life: 1 day 00:00:00
+    Maximum renewable life: 0 days 00:00:00
+    Last modified: Sat Apr 14 17:14:07 EDT 2012 (root/admin@MAKEWHATIS.LOCAL)
+    Last successful authentication: [never]
+    Last failed authentication: [never]
+    Failed password attempts: 0
+    Number of keys: 2
+    Key: vno 1, Triple DES cbc mode with HMAC/sha1, no salt
+    Key: vno 1, DES cbc mode with CRC-32, no salt
+    Attributes:
+    Policy: [none]
 
 
-###Add host principal and extract into local keytab
 
-[http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Client.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/6/html/Managing_Smart_Cards/Configuring_a_Kerberos_5_Client.html)
+###Add RDS host principal and extract into local keytab
 
-	kadmin.local:  addprinc -randkey host/dc2.makewhatis.com
-	WARNING: no policy specified for host/dc2.makewhatis.com@DC2.MAKEWHATIS.COM; defaulting to no policy
-	Principal "host/dc2.makewhatis.com@DC2.MAKEWHATIS.COM" created.
-	kadmin.local:  ktadd -k /etc/krb5.keytab host/dc2.makewhatis.com
-	Entry for principal host/dc2.makewhatis.com with kvno 3, encryption type Triple DES cbc mode with HMAC/sha1 added to keytab WRFILE:/etc/krb5.keytab.
-	Entry for principal host/dc2.makewhatis.com with kvno 3, encryption type DES cbc mode with CRC-32 added to keytab WRFILE:/etc/krb5.keytab.
+Now the server is up and running. Make sure NTP is started and that time is synced before adding hosts. This got me at first when trying to setup a client. Even though everything was setup properly, I was still getting denied via Kerberos.
+
+[http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-clients.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-clients.html)
+
+Start kadmin on the RDH server, in my case currently its dc01.makewhatis.local. Run the ktadd to add a host principal.
+
+    kadmin:  ktadd -k /etc/krb5.keytab host/dc01.makewhatis.local
+    Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type AES-256 CTS mode with 96-bit SHA-1 HMAC added to keytab WRFILE:/etc/krb5.keytab.
+    Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type AES-128 CTS mode with 96-bit SHA-1 HMAC added to keytab WRFILE:/etc/krb5.keytab.
+    Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type Triple DES cbc mode with HMAC/sha1 added to keytab WRFILE:/etc/krb5.keytab.
+    Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type ArcFour with HMAC/md5 added to keytab WRFILE:/etc/krb5.keytab.
+    Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type DES with HMAC/sha1 added to keytab WRFILE:/etc/krb5.keytab.
+    Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type DES cbc mode with RSA-MD5 added to keytab WRFILE:/etc/krb5.keytab.
+    kadmin:  exit
+
+Because we have to do this all with SELinux enabled, we need to restore security context on the file we just created.
+
+    [root@dc01 ~]# restorecon -v /etc/krb5.keytab 
+
+Now we add the server as a ds
+
+###Configure SASL Identity Mapping
+
+[http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html)
+
+[http://directory.fedoraproject.org/wiki/Howto:Kerberos](http://directory.fedoraproject.org/wiki/Howto:Kerberos)
+
+Couple things to do here to get this to work properly. 
+
+1. Configure the two sysconfig files 
+
+    KRB5_KTNAME=/etc/dirsrv/ds.keytab ; export KRB5_KTNAME
+
+2. setup SASL/GSSAPI maps as described in the above [docs.redhat.com article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html)
+
+Also as reference [http://www.openldap.org/doc/admin24/sasl.html#Mapping Authentication Identities](http://www.openldap.org/doc/admin24/sasl.html#Mapping Authentication Identities)
+
+""The authentication mechanism in the slapd server will use SASL library calls to obtain the authenticated user's "username", based on whatever underlying authentication mechanism was used. This username is in the namespace of the authentication mechanism, and not in the normal LDAP namespace.""
+
+To get this to work I had to map the uid, realm, and mechanism. In the disrv-console choose Directory Server -> Configuration -> SASL Mapping. There is some default mapping for ldap, but nothing with my gssapi mapping. We map uid to the \1 in the search DN. 
+
+    Name             mykerbmap
+    Regex            uid=(.*),cn=MAKEWHATIS.LOCAL,cn=gssapi,cn=auth
+    Search BaseDN    uid=\1,ou=People,dc=makewhatis,dc=local
+    Search Filter    (objectclass=*)
+
+Another good article I found:
+
+[http://www.linux-mag.com/id/4738/](http://www.linux-mag.com/id/4738/)
