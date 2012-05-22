@@ -1,10 +1,9 @@
 {% macro render_nav(menu, cls=None) -%}
+<a href="/"><h1 class="title">{{ site.meta.name }}</h1></a>
 {% if menu -%}
-<div id="toc">
-    <h1>RHCA</h1>
-    <ul>
-        <li><a href="/ex423">EX423</a></li>
-    </ul>
-</div>
+    {% set cats = ["ex423"] %}
+    {% for cat in cats %}
+        <ul class="nav nav-list left-nav"><li><a href="/{{ cat }}">{{ cat }}</a></li></ul>
+    {% endfor %}
 {%- endif %}
 {%- endmacro %}

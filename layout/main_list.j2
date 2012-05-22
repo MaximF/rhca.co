@@ -1,5 +1,5 @@
 {% extends "base.j2" %}
-{% block main %}
+{% block content %}
     {% filter markdown|typogrify -%}
         {% mark post -%}
             {% block post -%}
