@@ -6,8 +6,12 @@
 }
 
 .objlist {
-    list-style: none;
-    margin: 0;
+    list-style-type:circle;
+    margin: 0.5em 1.25em;
+}
+
+.objlist li {
+     line-height: 22px;
 }
 
 .left-nav {
