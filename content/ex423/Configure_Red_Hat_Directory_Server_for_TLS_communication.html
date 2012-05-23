@@ -43,3 +43,41 @@ Add
     [root@client01 openldap]# ldapsearch -ZZ -x
     ldap_start_tls: Connect error (-11)
     additional info: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
+
+### Configure Autostart without password
+
+To do this there needs to be a pin/password file for each instance so that the app can read it during startup. Otherwise your server will hang on boot while it waits for you to enter the password. 
+
+
+**For Directory Server**
+
+Create /etc/dirsrv/slapd-instance_name/pin.txt (substitute slapd-instance_name for actual server instance's directory name):
+    
+    touch /etc/dirsrv/slapd-instance_name/pin.txt
+    chmod 600 /etc/dirsrv/slapd-instance_name/pin.txt
+    chown ldap /etc/dirsrv/slapd-instance_name/pin.txt
+
+Edit the pin.txt file and place a single line in it (notice the difference in internal token name between this and Admin Server's):
+
+    Internal (Software) Token:dirserv_cert_password
+
+That's it. Restart the server to test whether it doesn't ask for the PIN anymore and starts up properly with SSL.
+
+**For Admin Server**
+
+The admin is a bit different than other dirsrv instances.
+
+Edit /etc/dirsrv/admin-serv/nss.conf and change NSSPassPhraseDialog to read:
+
+    NSSPassPhraseDialog  file://///etc/dirsrv/admin-serv/password.conf
+
+Then create /etc/dirsrv/admin-serv/password.conf:
+    
+    touch /etc/dirsrv/admin-serv/password.conf
+    chmod 600 /etc/dirsrv/admin-serv/password.conf
+    chown ldap /etc/dirsrv/admin-serv/password.conf
+
+Edit /etc/dirsrv/admin-serv/password.conf and place this single line in there:
+    
+    internal:adminserv_cert_password
+
