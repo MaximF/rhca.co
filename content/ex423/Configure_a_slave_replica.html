@@ -5,10 +5,80 @@ category: EX423
 ---
 
 
-[Replication Chapter](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html-single/Administration_Guide/index.html#Managing_Replication-Replication_Overview#Managing_Replication-Replication_Overview)
+[Replication Chapter](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Replication.html)
+
+Replication is the process by which directory data/entries are copied to other directory servers that respond to requests for the same domain. Smallest unit that can be replicated is a database. 
+
+[A good reference to rhds databases](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Configuring_Directory_Databases-Creating_and_Maintaining_Databases.html)
+
+The objective is to configure a slave replica, which in its most simple form is a copy of the master that we can read and write to. I found [Configuring Single-Master Replication](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Replication-Configuring_Single_Master_Replication.html) that has a full guide on getting this setup.
+
+### Install DS on the new box and configure it.
 
 On a brand new box, another libvirt machine for me, install the appropriate packages.
 
     yum install -y centos-ds
+
+Initially I didnt do the correct thing on my master server setup, and pump out the setup file during setup. The -k flag does that, and makes it really nice when setting up slaves. If you have that file, you can transfer it to the new box and run:
+    
+    setup-ds-admin.pl --file=/tmp/setup.inf --silent
+
+If not, then run the setup again, maybe pump out a setup file this time ;-)
+    
+    setup-ds-admin.pl -k
+
+I followed the same steps that I did for the master
+ 
+* Generating cert request and signing with ca, installed it, and configured TLS
+* Adding the password in the password file for startup
+* Ran chkconfig to configure boot time start.
+
+### Add Kerberos configuration
+
+[Fedoras Documentation](http://directory.fedoraproject.org/wiki/Howto:Kerberos) was a great help here for setting up Kerberos.
+
+Kerberos packages need to be installed. 
+
+    yum install krb5-workstation
+
+I copied over my `/etc/krb5.conf` from the master, made sure NTP was running, and time was correct.
+
+Then ran the following to configure the slave host as a principal.
+    
+    kadmin -p root/admin -q "add_principal -randkey ldap/dc04.makewhatis.local"
+    kadmin -p root/admin -q "ktadd -k /etc/dirsrv/ds.keytab ldap/dc04.makewhatis.local"
+
+    chown ldap:ldap /etc/dirsrv/ds.keytab
+    chmod 600 /etc/dirsrv/ds.keytab
+
+    echo "KRB5_KTNAME=/etc/dirsrv/ds.keytab ; export KRB5_KTNAME" >> /etc/sysconfig/dirsrv
+
+### Configure the Master for replication
+
+The instructions that Redhat gives are pretty on point. I followed them to configure the master for replication without having to change anything.
+
+### Configure the consumer (slave)
+
+Main thing I had to make sure of is creating a replication user to bind to. Pretty much just involves creating a user `cn=Replication Manager,cn=config` in the gui. 
+
+On the slave, right click on config -> new user -> Replication Manager w/ password
+
+[Details here](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Creating_the_Supplier_Bind_DN_Entry.html)
+
+### Create the replication agreement
+
+This part was pretty straightforward as well. From the configuration tab on the ds-console on master, right click on userRoot under replication. Add the server:port and choose encryption method. Start TLS is what I did with Simple as bind method. 
+
+Enter in Replication Manager bind dn and follow the rest of the defaults. At the end choose to always keep in sync/initialize now and you should have replication within a minute or so. 
+
+### Test it out. 
+
+I played around and added entries in master, and then did a search against my slave. 
+
+### Configure Client Machine
+
+In order to have my client try both servers, in case one is down, there needs to be an entry in `/etc/openldap/ldap.conf`. All that needs to be done is to add the other host to the URL entry.
+
+    URI ldap://dc01.makewhatis.local/ ldap://dc04.makewhatis.local/
 
 
