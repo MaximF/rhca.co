@@ -3,17 +3,36 @@ title: Authenticate to the Directory Server using kerberos
 objective: 12
 category: EX423
 ---
+----
 
-This objective is a work in progress.
+* Sections
+    * [Setup Kerberos](#setup-kerberos)
+        * [Install packages](#install-packages)
+        * [update configs with appropriate hosts](#update-configs-with-appropriate-hosts)
+        * [Configure Firewall Rules for KDC](#)
+        * [Create key/initialize db](#)
+        * [Create principal](#)
+        * [Start services & configure boot time start](#)
+        * [Useful Commands](#)
+    * [Add RDS host principal and extract into local keytab](#)
+    * [Configure SASL Identity Mapping](#)
 
+
+## Setup Kerberos
+----
+
+First step in this madness is installing a KDC and setting up Kerberos so that there is something to authenticate to. Most likely this isnt part of the exam, I can't imagine having to setup KDC, especially since its not in the objectives, but it can't hurt to go through it in practice.
+
+### Install packages
+----
 [http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-server.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-server.html)
 
-###Install kerberos
 
     yum install krb5-libs krb5-server krb5-workstation
 
-###update configs with appropriate hosts
 
+### Update configs with appropriate hosts
+----
 Edit krb5.conf to look similar to this (replaced appropriate values with my domain):
 
     [root@kdc ~]# vim /etc/krb5.conf
@@ -70,7 +89,8 @@ And the kdc.conf file:
      }
 
 
-###Configure Firewall Rules for KDC
+### Configure Firewall Rules for KDC
+---
 
     [root@kdc ~]# iptables -N KDC
     [root@kdc ~]# iptables -A KDC -p udp --dport 88 -j ACCEPT
@@ -79,7 +99,8 @@ And the kdc.conf file:
     [root@kdc ~]# iptables -A KDC -p tcp --dport 749 -j ACCEPT
     [root@kdc ~]# service iptables save
 
-###Create key/initialize db
+### Create key/initialize db
+----
 
 ''The -s switch forces creation of a stash file in which the master server key is stored.''
 
@@ -98,13 +119,14 @@ Edit the /var/kerberos/krb5kdc/kadm5.acl which sets the acls for admin.
 
     */admin@MAKEWHATIS.LOCAL        *
 
-###start the kadmin.local
-
+### Start the kadmin.local
+----
     [root@kdc ~]# /usr/kerberos/sbin/kadmin.local
     Authenticating as principal root/admin@MAKEWHATIS.LOCAL with password.
 
 
-###Create principal
+### Create principal
+----
 
     kadmin.local:  add_principal david/admin@MAKEWHATIS.LOCAL
     WARNING: no policy specified for david/admin@MAKEWHATIS.LOCAL; defaulting to no policy
@@ -117,13 +139,12 @@ Edit the /var/kerberos/krb5kdc/kadm5.acl which sets the acls for admin.
     [root@kdc ~]# /usr/kerberos/sbin/kadmin.local -q "addprinc david/admin"
 
 
-###Start Services
+### Start services & configure boot time start
+----
 
     [root@kdc ~]# service krb5kdc start
     [root@kdc ~]# service kadmin start
     [root@kdc ~]# service krb524 start
-
-###Configure boot time start
 
     [root@kdc ~]# chkconfig krb5kdc on
     [root@kdc ~]# chkconfig kadmin on
@@ -131,7 +152,10 @@ Edit the /var/kerberos/krb5kdc/kadm5.acl which sets the acls for admin.
 
 The kadmin tool allows us to query the kerberos db for principals, hosts, etc. Running kadmin.local will log you in right away on the KDC.    
 
-###List principals
+### Useful Commands
+----
+
+#### List principals
 
     kadmin.local:  list_principals
     K/M@MAKEWHATIS.LOCAL
@@ -143,7 +167,7 @@ The kadmin tool allows us to query the kerberos db for principals, hosts, etc. R
     krbtgt/MAKEWHATIS.LOCAL@MAKEWHATIS.LOCAL
     root/admin@MAKEWHATIS.LOCAL
 
-###Get Details Principal
+####Get Details Principal
 
     kadmin.local:  get_principal test01
     Principal: test01@MAKEWHATIS.LOCAL
@@ -163,9 +187,8 @@ The kadmin tool allows us to query the kerberos db for principals, hosts, etc. R
     Policy: [none]
 
 
-
-###Add RDS host principal and extract into local keytab
-
+### Add RDS host principal and extract into local keytab
+----
 Now the server is up and running. Make sure NTP is started and that time is synced before adding hosts. This got me at first when trying to setup a client. Even though everything was setup properly, I was still getting denied via Kerberos.
 
 [http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-clients.html](http://docs.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/5/html/Deployment_Guide/s1-kerberos-clients.html)
@@ -187,7 +210,7 @@ Because we have to do this all with SELinux enabled, we need to restore security
 
 Now we add the server as a ds
 
-###Configure SASL Identity Mapping
+### Configure SASL Identity Mapping
 
 [http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html)
 

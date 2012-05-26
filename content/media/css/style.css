@@ -5,6 +5,13 @@
     margin-left: 135px;
 }
 
+nav {
+    margin: 20px 0px;
+}
+
+nav a {
+    margin: 0px 20px 0px 0px;
+}
 .objlist {
     list-style-type:circle;
     margin: 0.5em 1.25em;
@@ -23,6 +30,29 @@
     padding: 0 0 30px 0;
 }
 
+h1 {
+    font-size: 200%;
+    margin: 10px 0;
+}
 h2 {
-    margin-bottom: 25px;
+    font-size: 160%;
+    margin: 10px 0;
+}
+h3 {
+    font-size: 135%;
+    margin: 1px 0;
+}
+h4 {
+    font-size: 125%;
+    margin: 10px 0;
+}
+h5  {
+    font-size: 115%;
+}
+em {
+    font-size: 108%;
+}
+hr {
+    margin: 10px 0px 10px 0px;
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
 }

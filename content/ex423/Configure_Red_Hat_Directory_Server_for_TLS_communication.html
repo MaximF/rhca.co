@@ -3,29 +3,92 @@ title: Configure Red Hat Directory Server for TLS communication
 objective: 5
 category: EX423
 ---
+----------------
+* Sub-objectives:
+    - [Request a certificate from a certificate authority (CA)](#request-a-certificate-from-a-certificate-authority-ca)
+    - [Install CA-signed server certificate](#install-ca-signed-server-certificate)
 
+----
 In order for this objective to be practiced realistically, you need a few things, including a signed certificate from a CA. I'm sure on the exam that we will be able to just generate a CSR and get a cert back, since there are no objectives for setting up a CA. This is all speculation though, as I have yet to take the test myself and have no idea whats on it. I know that openldap pukes if you try and use a self-signed certificate, without adding "TLS_REQCERT allow" into the conf file. 
 
 So to be thorough, I setup a CA on a seperate EC2 instance. Checkout the guide if you want to go that extra mile while studying. [http://makewhatis.com/2012/04/setting-up-simple-ca-openssl](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl)
 
+## Request a certificate from a certificate authority (CA)
+----
+* Sections: 
+    - [Generate a certificate request and submit CSR to CA](#generate-a-certificate-request-and-submit-csr-to-ca)
+    - [Submit your Certificate Signing Request](#submit-your-certificate-signing-request)
+
 ### Generate a certificate request and submit CSR to CA
+----
+Generating a Certificate Signing Request for our CA to sign and give us back a certificate is the first step in enabling communitcation via the [TLS protocol](http://en.wikipedia.org/wiki/Transport_Layer_Security). 
 
-Although this is one of the steps to getting this working, its actually covered in a different objective. Check out the "[Request a certificate from a certificate authority (CA)](http://dev.rhca.co/ex423/Request_a_certificate_from_a_certificate_authority__CA_.html)" page for this step.
+**1.** In the Directory Server management area, choose "Manage Certificates". Then choose the Request button at the bottom to begin the request.
 
-### Install the certificates
+<br /><img src="/media/images/mng-certs.png" /><br />
 
-This is also covered in another objective. Its a prereq to getting this one working, so check that out at: [Install CA-signed server certificate](http://rhca.co/ex423/Install_CA-signed_server_certificate.html)
+**2.** Generating the request just involved filling out that information, as you would when creating and SSL with openssl. 
 
-### Enable TLS on the Directory Admin
+<br /><img src="/media/images/certreqwiz2.png" /><br /> 
 
+**3.** Next you are prompted for the password that was setup to protect the private key.
+
+<br /><img src="/media/images/certreqwiz3.png" /><br />
+
+**4.** Finally you get your certificate request, which can be both downloaded, and copied to your clipboard (pretty handy).
+
+<br /><img src="/media/images/certreqwiz4.png" /><br />
+
+
+### Submit your Certificate Signing Request
+----
+* Sections: 
+    - [Install the certificates](#install-the-certificates)
+    - [Enable TLS on the Directory Admin](#enable-tls-on-the-directory-admin)
+    - [Enable TLS on a client](#enable-tls-on-a-client)
+    - [Configure Autostart without password](#configure-autostart-without-password)
+        * [For Directory Server](#for-directory-server)
+        * [For Admin Server](#for-admin-server)
+
+I linked to the article on [makewhatis.com](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl) that explains the way I did the next step. You can do this a bunch of different ways, this just seemed like the most convenient. 
+
+**1.** Copy your key to your ca server. (In my case I just copied to clipboard, and just created the file on the ca server)
+    
+**2.** Sign the request with the commands in the above article, so that we get our crt file. Copy that back over to our working computer, along with the cacert from the ca server. We will need this so that RHDS regocnizes our certificate as being signed by a valid trusted CA.
+
+## Install CA-signed server certificate
+----
+At this point you should have generated a CSR, submitted it, and now should have the certificate file signed by the [CA](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl).
+
+**1.** In the Directory Console click "tasks" and then "Manage Certificates"
+
+<br /><img src="/media/images/mng-certs.png" /><br />
+
+**2.** Click Install under the Server Certs tab, then you can either give the locate of the cert (if you actually copied it to the Directory Server) or just copy and paste the contents of it in. 
+
+**3.** Click next until you hit the password prompt, then give the password that was used to protect the private key of your RHDS.
+
+
+#### *Install CA Certs*
+----
+Whenever a certificate is used from any CA, the clients should have the CA's public key, which allows them to verify authenticity of both the CA and the CA-signed certificate. This will be provided in some way, shape, or form from the CA. In this case here, since we just setup our own [CA](http://makewhatis.com/2012/04/setting-up-simple-ca-openssl), we just bundled our CA cert with the signed cert.
+
+**1.** In the same area as where the Server Certs are installed, there is a tab for CA Certs. Follow the same process to install the cert from your CA. Make sure you check the boxes that allow your clients and servers to trust the CA.
+
+
+**2.** Click Done, and check the certificates by choosing the "Detail" button at the bottom. 
+
+
+#### *Enable TLS on the Directory Admin*
+----
 Finally, TLS can be enabled. In the Directory Server Console, choose the Configuration tab, and highlight the server name on the left. Choose encryption and check the box for SSL and "Use this cipher family: RSA". You should see your certificate in there now, but you may have to reconnect to see it. At least I did, for some reason it wouldnt show up until I reopened the console. 
 
 Once you are able to see your certificate and choose it, then you can restart your Directory Server. From the Tasks tab choose the "Restart Directory Server" option, and wait for it to restart. 
 
 Now configure your clients to use TLS, and make sure they have the CA certs installed, and you should be connecting over TLS.
 
-### Enable TLS on a client
-
+#### *Enable TLS on a client*
+----
 To enable TLS on the client, all that needs to happen is the cacert be imported, and openldap be told where to find it. 
 
 CA certs go in /etc/openldap/cacerts/. Whatever you name your CA cert, make sure you update the ldap.conf.
@@ -44,13 +107,13 @@ Add
     ldap_start_tls: Connect error (-11)
     additional info: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
 
-### Configure Autostart without password
-
+#### *Configure Autostart without password*
+----
 To do this there needs to be a pin/password file for each instance so that the app can read it during startup. Otherwise your server will hang on boot while it waits for you to enter the password. 
 
 
-**For Directory Server**
-
+##### **For Directory Server**
+----
 Create /etc/dirsrv/slapd-instance_name/pin.txt (substitute slapd-instance_name for actual server instance's directory name):
     
     touch /etc/dirsrv/slapd-instance_name/pin.txt
@@ -63,8 +126,8 @@ Edit the pin.txt file and place a single line in it (notice the difference in in
 
 That's it. Restart the server to test whether it doesn't ask for the PIN anymore and starts up properly with SSL.
 
-**For Admin Server**
-
+##### **For Admin Server**
+----
 The admin is a bit different than other dirsrv instances.
 
 Edit /etc/dirsrv/admin-serv/nss.conf and change NSSPassPhraseDialog to read:

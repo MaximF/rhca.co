@@ -1,9 +1,9 @@
 {% extends "base.j2" %}
 <!-- Page for each Objective -->
 {% block content -%}
-    <h2>
+    <h1>
         {{ resource.meta.title }}
-    </h2>
+    </h1>
     {% filter markdown|typogrify -%}
         {% mark post -%}
             {% block post -%}

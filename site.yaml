@@ -45,6 +45,11 @@ meta:
     author: David Johansen
     name: RHCA.CO
 
+markdown:
+    extensions:
+        - def_list
+        - tables
+        - headerid
 
 sorter:
     objective:
