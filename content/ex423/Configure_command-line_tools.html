@@ -1,15 +1,61 @@
 ---
 title: Configure command-line tools to use TLS / Default LDAP Suffix
-objective: 8
+objective: 3
 category: EX423
 ---
-
+----
 * Sub Objectives
     * [Configure to use TLS](#configure-to-use-tls)
     * [Configure to use a default LDAP suffix](#configure-to-use-a-default-ldap-suffix)
 
+The objective is just talking about command line tools, so ldap*. The file that controls the behavior of these tools is `/etc/openldap/ldap.conf`
+
 ## Configure to use TLS
 ----
 
+- Two main files
+    * [/etc/openldap/ldap.conf](#edit-etcopenldapldapconf)
+    * [/etc/openldap/cacert.crt](#verify-etcopenldapcacertcrt)
+
+
+### Edit /etc/openldap/ldap.conf
+---- 
+This is the config file that the openldap tools refer to when querying the ldap server. This tells it where to look and how to look. In order to use tls by default, we can expicitly tell it to here by using ldaps:// style address.
+         
+    URI ldaps://dc01.makewhatis.local/ 
+
+In order to use ldaps though, openldap needs to be aware of the location of ca certificate, in order to validate the identity of the ldaps server its contacting. 
+
+    TLS_CACERT /etc/openldap/cacerts/cacerts.crt
+
+This is the cacert of the CA that was created earlier, and that is installed on the RHDS. It doesn't matter what you call it, as long as you define it in this file. 
+
+When there is a replica server out there that you would like to use as failover, its just added to the URI line as such:
+
+    URI ldaps://dc01.makewhatis.local/ ldaps://dc04.makewhatis.local/
+
+Now if dc01 is out of commission, but dc04 is still taking requests, then the command line tools will still work. 
+
+
+### Verify /etc/openldap/cacert.crt
+----
+
+Once the actual existence of the cert itself has been verified, testing it is fairly simple.
+
+    ~]# ldapsearch -x -ZZ -h dc01.makewhatis.local 
+
+As long as configs are setup correctly, there should be a stream of info following that command. If there are TLS or SSL errors of any kind, then something isnt correct with your config.
+
+The validity of the cacert you are using to connect can be verified with a simple openssl command.
+
+    ~]# openssl s_client -connect dc01.makewhatis.local:636 -CAfile /etc/openldap/cacerts/cacert.crt
+
+If you get an ok, its not that. Double check everything in your configs, url, basedn, and cert references for typos.
+
 ## Configure to use a default LDAP suffix
 ----
+
+Last main thing in `/etc/openldap/ldap.conf` would be the base dn that the tools should start searching the tree from.
+
+    BASE dc=makewhatis,dc=local
+
