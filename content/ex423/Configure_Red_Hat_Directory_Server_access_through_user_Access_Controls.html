@@ -3,3 +3,81 @@ title: Configure Red Hat Directory Server access through user Access Controls
 objective: 4
 category: EX423
 ---
+---
+Access controls are used to restrict users via target attributes, ip, groups, or DNS name. 
+
+- sections:
+    * [Access Control Instructions Overview](#access-control-instructions)
+        - [ACI Structure](#aci-structure)
+        - [ACI Placement](#aci-placement)
+        - [Default ACIs](#default-acis)
+    * [Creating ACIs](#creating-acis)
+        - [Creating ACIs Manually](#creating-acis-manually)
+        - [Creating ACIs from the Console](#creating-acis-from-the-console)
+
+
+## Access Control Instructions
+
+The mechanism which defines user access is called access control. When the server receives a request, it uses the authentication information provided by the user in the bind operation and the access control instructions (ACIs) defined in the server to allow or deny access to directory information. [referenced article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Access_Control.html#Managing_Access_Control-Access_Control_Principles)
+
+### ACI Structure
+
+Three main parts:
+
+* Target
+* Permission
+* Bind Rule
+
+Permission and bind parts are a pair called ACR(access control rule). Permissions is granted or denied based on whether the other is true. 
+
+### ACI Placement
+
+ACI applies to an entry and any children. If there are no child entries, then its just for that entry. 
+
+The actual aci attr is multi-valued, which means can have more than one to each entry or subtree.
+
+An ACI can be created at one level, but set to only apply to entries below it, so I can set an ACI at organizationalUnit but have target inetorgperson (lower on the tree). Only time this doesnt work is on the root DSE.
+
+*If rules are placed at higher levels in the tree, it minimizes number of ACIs, and chance of unseen conflicts*
+
+### Default ACIs
+
+There are default acis setup when the server is setup. 
+
+* Users can modify a list of common attributes in their own entries, including the mail, telephoneNumber, userPassword, and seeAlso attributes. Operational and most of the security attributes, such as aci, nsroledn, and passwordExpirationTime, cannot be modified by users.
+* Users have anonymous access to the directory for search, compare, and read operations.
+* The administrator (by default uid=admin,ou=Administrators,ou=TopologyManagement,o=NetscapeRoot) has all rights except proxy rights.
+* All members of the Configuration Administrators group have all rights except proxy rights.
+* All members of the Directory Administrators group have all rights except proxy rights.
+
+
+## Creating ACIs
+
+ACIs have to main ways that they can come about. Manually via LDIF files or configured in the GUI. GUI allows for confiration as well as shows the raw syntax that makes up your final rule. 
+
+### Creating ACIs Manually
+
+The exact syntax gets a little crazy. Details can be found here: [referenced article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Access_Control-Creating_ACIs_Manually.html)
+
+Once you have the proper formatted file, and have gotten the syntax down, applying it to the directory is easy.
+
+Here is the contents of my testaci file:
+
+    dn: uid=ice,ou=People,dc=makewhatis,dc=local
+    changetype: modify
+    add: aci
+    aci: (targetattr = "*") (version 3.0;
+        acl "test3"; allow (read,compare,search,selfwrite,delete,add) (userdn = "ldap:///uid=ice,ou=People,dc=makewhatis,dc=local");) 
+
+And the command to apply it:
+
+    ~]# /usr/lib64/mozldap/ldapmodify -w - -v -D "cn=Directory Manager" -f testaci
+
+Notice that we are using the mozlap tools, not the openldap tools. This I discovered when trying to apply this rule and it just didnt work with RHDS. 
+
+### Creating ACIs from the Console
+
+Now for the purposes of the test, I will most likely use the GUI, just cause I am no LDAP master, but its good to dig in and do all this stuff manually so that you actually understand what's going on in the background.
+
+Instructions for the gui are here: [referenced article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Access_Control-Creating_ACIs_from_the_Console.html)
+
