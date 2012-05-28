@@ -1,42 +1,126 @@
-============
-My Lab Setup
-============
-
-VirtualBox VM Centos 5.8
-------------------------
-desktop01.makewhatis.com
+---
+title: My Lab Setup
+category: EX423
+---
 
 
-EC2 Centos 5.8 (mircro)
+Centos 5.8 (vms in kvm) on 192.168.1.0/24
 -----------------------
-client01.makewhatis.com - 10.171.7.136  (running Gnome Desktop via VNC)
-client02.makewhatis.com - 184.169.152.142
-kerberos.makewhatis.com - 184.169.141.95
-dc03.makewhatis.com - 184.169.141.14
-dc04.makewhatis.com - 184.169.141.47
-nis.makewhatis.com - 
+
+* **Clients**
+    - client01.makewhatis.local
+    - client02.makewhatis.local
+    - client03.makewhatis.local
+    - client04.makewhatis.local
+* **KDC**
+    - kerberos.makewhatis.local
+* **RHDS Servers. Master and Slave**
+    - dc01.makewhatis.local
+    - dc04.makewhatis.local
+* **NIS client/server pair**
+    - nis-client.makewhatis.local
+    - nis.makewhatis.local
+* **CA signing server**
+    - ca.makewhatis.local
+    *Need to have a CA server, RHDS will not run without a signed certificate*
+* **DNS nameserver**
+    - ns01.makewhatis.local <br>
+    *Internal dns uses bind and all hosts have proper RDNS. (RDNS is needed for kerberos, its picky)*
 
 
-EC2 Fedora release 16 (micro)
------------------------------
-ca.makewhatis.com - 184.169.147.12
+## My Excercises
+
+### Prep
+
+* **Prepare the environment**
+    - **Setup servers with hostnames and setup new zone file for acme.local**
+        * dc01.acme.local     192.168.1.200
+        * dc02.acme.local     192.168.1.201
+        * client.acme.local   192.168.1.202
+        * nis.acme.local      192.168.1.203
+    - **Make sure all servers are configured to resolve dns from 192.168.1.132**
+    - **NIS server should have NIS setup, and the following users on it**
+        * jon, tom, bill, jim, alan, christy
+    - **Setup kerberos domain ACME.LOCAL**
+        * should have admin user as well as the above users
+
+### Go time steps
+
+* **Install rhds on dc01.acme.local for ACME.LOCAL**
+    - Configure LDAP suffix for ACME.LOCAL
+    - Admin should have a password of acme123
+* **Configure a slave, dc02.acme.local**
+    - slave should replicate in real time.
+    - slave should refer any writes to master.
+* **Setup all Directory Services DS/DS-admin to communicate via TLS**
+    - request certificates
+    - install certificates
+    - configure ca certs
+    - slave should talk via TLS
+    - console talk via TLS
+    - setup command line tools to query a dc=acme,dc=local with TLS
+* **Import all NIS users from nis.acme.local to dc01**
+    - Users should retain their shadow info.
+    - Groups should be migrated as well.
+* **Restrict normal users from seeing email attribuite**
+    - command: `ldapsearch -x -s sub -b "dc=makewhatis,dc=local" "cn=ice" mail` should NOT return the mail attribute.
+    - user should still be able to view 
+* **Configure authentication with Kerberos/LDAP**
+    - client01 should be able to authenticate via kerberos. 
+
+* ***TODO***
+    - Create/Modify inetOrgPerson entries
+    - Import LDIF
+    - Export LDIF
+    - Active Directory
 
 
-=============
-My Excercises
-=============
 
-## to start run your awesome lab start tool. BOOM!
+### startlab.sh
 
-# on first dc configure RHDS http://rhca.co/ex423/Install_Red_Hat_Directory_Server.html
-1. Install centos-ds centos-ds-admin
-2. Configure iptables
-3. Set SELinux to Enforcing
-4. Setup Certs
+    ~]# cat lab1.txt
+    dc01.acme.local
+    dc02.acme.local
+    client.acme.local
+    nis.acme.local
 
-# on client 1
-1. install pam_ldap
-2. configure ldap auth
+    ~]# bash startlab.sh
+    vms starting......
 
 
+Startup code, simple but just in case youre wondering...
 
+    #!/bin/bash
+
+    DATE=`date +%Y.%m.%d`
+    HOSTS=`cat lab1.txt`
+
+
+    if [ "$1" == "" ]; then
+        exit 1
+    elif [ "$1" == "start" ]; then
+        ACTION="$1"
+    elif [ "$1" == "stop" ]; then
+        ACTION="$1"
+    elif [ "$1" == "save" ]; then
+        ACTION="$1"
+    else
+        echo "BAD ARG FAIL"
+        exit 1
+    fi
+    
+    for HOST in ${HOSTS}; do
+        echo "Performing $ACTION on $HOST"
+        if [ $ACTION == "save" ]; then
+            echo "SAVING $HOST"
+            virsh save ${HOST} /home/storage/libvirt/backups/${HOST}.${DATE}
+        fi
+        if [ $ACTION == "start" ]; then
+            echo "STARTING $HOST"
+            virsh start ${HOST}
+        fi
+        if [ $ACTION == "stop" ]; then
+            echo "stopping $HOST"
+            virsh shutdown ${HOST}
+        fi
+    done

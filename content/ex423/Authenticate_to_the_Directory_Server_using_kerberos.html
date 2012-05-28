@@ -195,6 +195,11 @@ Now the server is up and running. Make sure NTP is started and that time is sync
 
 Start kadmin on the RDH server, in my case currently its dc01.makewhatis.local. Run the ktadd to add a host principal.
 
+    kadmin:  addprinc -randkey host/dc04.makewhatis.local
+    WARNING: no policy specified for host/dc04.makewhatis.local@MAKEWHATIS.LOCAL; defaulting to no policy
+    Principal "host/dc04.makewhatis.local@MAKEWHATIS.LOCAL" created.
+
+    
     kadmin:  ktadd -k /etc/krb5.keytab host/dc01.makewhatis.local
     Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type AES-256 CTS mode with 96-bit SHA-1 HMAC added to keytab WRFILE:/etc/krb5.keytab.
     Entry for principal host/dc01.makewhatis.local with kvno 4, encryption type AES-128 CTS mode with 96-bit SHA-1 HMAC added to keytab WRFILE:/etc/krb5.keytab.

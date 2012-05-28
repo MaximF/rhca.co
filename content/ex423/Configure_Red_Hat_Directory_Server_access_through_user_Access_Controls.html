@@ -81,3 +81,63 @@ Now for the purposes of the test, I will most likely use the GUI, just cause I a
 
 Instructions for the gui are here: [referenced article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Access_Control-Creating_ACIs_from_the_Console.html)
 
+### Example
+
+Before and After. Before I went in and removed anonymous read access to email, anyone could a users email with s simple query. As seen below.
+
+    [ice@client03 ~]$ ldapsearch -x -s sub -b "dc=makewhatis,dc=local" "cn=ice" mail
+    # extended LDIF
+    #
+    # LDAPv3
+    # base <dc=makewhatis,dc=local> with scope subtree
+    # filter: cn=ice
+    # requesting: mail 
+    #
+
+    # ice, Groups, makewhatis.local
+    dn: cn=ice,ou=Groups,dc=makewhatis,dc=local
+
+    # ice, People, makewhatis.local
+    dn: uid=ice,ou=People,dc=makewhatis,dc=local
+    mail: ice@makewhatis.local
+
+    # search result
+    search: 2
+    result: 0 Success
+
+    # numResponses: 3
+    # numEntries: 2
+
+ I went in through the GUI, right clicked on the directory (makewhatis), chose 'Set Access Permissions', and unchecked that attribuite from the 'Enable anonymous access' rule.
+
+    [ice@client03 ~]$ ldapsearch -x -s sub -b "dc=makewhatis,dc=local" "cn=ice" mail
+    # extended LDIF
+    #
+    # LDAPv3
+    # base <dc=makewhatis,dc=local> with scope subtree
+    # filter: cn=ice
+    # requesting: mail 
+    #
+
+    # ice, Groups, makewhatis.local
+    dn: cn=ice,ou=Groups,dc=makewhatis,dc=local
+
+    # ice, People, makewhatis.local
+    dn: uid=ice,ou=People,dc=makewhatis,dc=local
+
+    # search result
+    search: 2
+    result: 0 Success
+
+    # numResponses: 3
+    # numEntries: 2
+    [ice@client03 ~]$ 
+
+This essential removed the target attribute "mail" from the list of allowed attributes that can be viewed without permissions from 'Enable anonymous access' ACI.
+
+    (targetattr != "userPassword || mail") 
+    (version 3.0;
+    acl "Enable anonymous access";
+    allow (read,compare,search)
+    (userdn = "ldap:///anyone")
+    ;)
