@@ -3,3 +3,66 @@ title: Configure write referrals
 objective: 6
 category: EX423
 ---
+
+
+[http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Configuring_Directory_Databases-Using_Referrals.html](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Configuring_Directory_Databases-Using_Referrals.html)
+
+
+Configure replication (single master)
+-------------------------------------
+
+[http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Replication-Configuring_Single_Master_Replication.html#step-supplierDN-single](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/Managing_Replication-Configuring_Single_Master_Replication.html#step-supplierDN-single)
+
+## on the consumer ##
+
+
+(1) stop the dirsrv, back dse.ldif, and add this entry:
+
+    dn: cn=replication manager,cn=config
+    objectClass: inetorgperson
+    objectClass: person
+    objectClass: top
+    objectClass: organizationalPerson
+    cn: replication manager
+    sn: RM
+    userPassword: password
+    passwordExpirationTime: 20380119031407Z
+
+*dont worry about the password, we can change that in the directory.*
+
+(2) start the dirsrv back up, navigate to the above entry and change that password so that its encrypted in the ldif file. 
+
+(3) in the configuration -> Replication tab choose userRoot from the left tree. 
+    - enable replica
+    - Dedicated Consumer
+    - add new Supplier DN - cn=replication manager,cn=config
+
+*this is the dn that we added above, the one that supplier uses to connect and push updates*
+
+## on the supplier ##
+
+(1) enable changelog in replication settings. 
+
+**console -> configuration -> Replication -> supplier settings**
+
+(2) choose userRoot in the tree in the replication section, and enable replica, as single master.
+
+(3) right click on userRoot, select "New Replication Agreement" 
+    - add consumer hostname:389 (port is only used for identification in panel.)
+    - Use StartTLS
+    - Simple
+        * Bind as: cn=replication manager,cn=config
+        * Password: enter the one you made above
+    Choose defaults for everything except the last step. *Initialize Consumer Now* would be what we choose
+
+## Testing ##
+
+Possible errors:
+
+* upon choosing "done" in the replication agreement this error pops up:
+    - The consumer initialization has unsuccessfully completed. The error received byt the replica is: '3 Replication error aquiring replica: permission denied'
+
+- This means that you may be a bit sleep deprived like I was, and tried to setup the "Current Supplier DNs" as cn=directory manager,cn=config instead of replication manager. If the slave is only allowing replication manager to connect for updates, and directory manager tries to, well hes gonna get kicked out.
+
+At this point get onto the master and add an entry. Does it show up in the consumer? 
+
