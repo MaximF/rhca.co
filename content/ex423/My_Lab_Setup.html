@@ -34,10 +34,10 @@ Centos 5.8 (vms in kvm) on 192.168.1.0/24
 
 * **Prepare the environment**
     - **Setup servers with hostnames and setup new zone file for acme.local**
-        * dc01.acme.local     192.168.1.200
-        * dc02.acme.local     192.168.1.201
-        * client.acme.local   192.168.1.202
-        * nis.acme.local      192.168.1.203
+        * ldap.acme.local     192.168.1.200
+        * ldap-slave.acme.local     192.168.1.201
+        * client.acme.local   192.168.1.203
+        * nis.acme.local      192.168.1.204
     - **Make sure all servers are configured to resolve dns from 192.168.1.132**
     - **NIS server should have NIS setup, and the following users on it**
         * jon, tom, bill, jim, alan, christy

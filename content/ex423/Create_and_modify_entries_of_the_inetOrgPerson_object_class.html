@@ -3,3 +3,123 @@ title: Create and modify entries of the inetOrgPerson object class
 objective: 8
 category: EX423
 ---
+
+**inetOrgPerson** class is the default class when adding new users, usually. When a new user is added in RHDS its created using this class. 
+
+	objectClasses: ( 2.16.840.1.113730.3.2.2 NAME 'inetOrgPerson' DESC 'Internet extended organizational person objectclass' SUP organizationalPerson MAY ( audio $ businessCategory $ carLicense $ departmentNumber $ displayName $ employeeType $ employeeNumber $ givenName $ homePhone $ homePostalAddress $ initials $ jpegPhoto $ labeledURI $ manager $ mobile $ pager $ photo $ preferredLanguage $ mail $ o $ roomNumber $ secretary $ uid $ x500uniqueIdentifier $ userCertificate $ userSMimeCertificate $ userPKCS12 ) X-ORIGIN 'RFC 2798' )
+
+Main attributes include:
+
+* audio
+* businessCategory
+* carLicense
+* departmentNumber
+* displayName
+* employeeType
+* employeeNumber
+* givenName
+* homePhone
+* homePostalAddress
+* initials
+* jpegPhoto
+* labeledURI
+* manager
+* mobile
+* pager
+* photo
+* preferredLanguage
+* mail
+* o
+* roomNumber
+* secretary
+* uid
+* x500uniqueIdentifier
+* userCertificate
+* userSMimeCertificate
+* userPKCS12
+
+*Not sure if this objective is going to require that we add these entries or modify these entries using ldif files, but I am going to assume so. This will forever be a mystery for this site, as I will not be updating this after the test. That just would be morally corrupt and violate my agreement to RedHat.*
+
+### Creating a new entry
+
+(1) start with the full dn of the entry to be. 
+
+	dn: cn=Jimbo Jones,ou=People,dc=acme,dc=local
+
+(2) define the objectclass which we will choose attributes from.
+	
+	objectclass: inetOrgPerson
+
+(3) next the common name, 
+	
+	cn: Jimbo Jones
+
+(4) list the users Surname or last name
+	
+	sn: Jones
+
+(5) user id, generally something like first initial then last name
+	
+	uid: jjones
+
+(6) password
+
+	userpassword: letmein
+
+(7) more attributes
+
+	carlicense: 534JKL
+	homephone: 480-515-8888
+	mail: jimbo@acme.local
+
+(8) Organizational Unit.
+	
+	ou: IT
+
+All together in `jimbo.ldif`:
+
+	dn: cn=Jimbo Jones,ou=People,dc=acme,dc=local
+	objectclass: inetOrgPerson
+	cn: Jimbo Jones
+	sn: Jones
+	uid: jjones
+	userpassword: letmein
+	carlicense: 534JKL
+	homephone: 480-515-8888
+	mail: jimbo@acme.local	
+
+Run ldapadd to add the entry:
+
+	ldapadd -ZZ -x -W -D "cn=Directory Manager" -h ldap.acme.local -f jimbo.ldif
+
+If all goes well the result should look something like this:
+
+	[root@client ~]# ldapadd -ZZ -x -W -D "cn=Directory Manager" -h ldap.acme.local -f jimbo.ldif 
+	Enter LDAP Password: 
+	adding new entry "cn=Jimbo Jones,ou=People,dc=acme,dc=local"
+
+### Modify an entry
+
+To modify and entry, once I know what I need to modify, is easier than adding one. In this case I'll change Jimbo's license plate number.
+
+(1) start with the full dn of the entry to be. 
+
+	dn: cn=Jimbo Jones,ou=People,dc=acme,dc=local
+
+(2) define the changetype. Remember ldapadd assumes `changetype: add`
+
+	changetype: modify
+
+(3) whats going to be modified and how
+
+	replace: carlicense
+
+(4) give the new value
+
+	carlicense: IAM5
+
+Now we run the command and if all goes well it will look like this:
+
+	[root@client ~]# ldapmodify -ZZ -x -W -D "cn=Directory Manager" -h ldap.acme.local -f jimbo-new.ldif 
+	Enter LDAP Password: 
+	modifying entry "cn=Jimbo Jones,ou=People,dc=acme,dc=local"
