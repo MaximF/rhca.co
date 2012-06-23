@@ -3,3 +3,177 @@ title: Configure a system to authenticate using Active Directory
 objective: 12
 category: EX423
 ---
+
+
+---
+
+### Setup AD on Windows Server 2008 R2
+
+First thing, and most difficult part, is to fire up a Windows Server Instance 
+to install AD on. Then make sure the UNIX tools are installed on this server, and the user is setup in Users, with the Unix attributes set.
+
+### Attribute Mapping
+
+Once I got that up and going, it was just a matter of mapping the AD attributes
+to the Linux attributes.
+
+So the attributes to map are different from 2003 to 2008 from what I saw. I setup AD with 2008, so Ill go over the mappings there. Once the directory was setup, a simple ldapsearch against Users, showed the result that I wanted.
+
+	ldapsearch -x -h 192.168.1.124 -W -D "cn=Jim Bo,cn=Users,DC=acme,DC=local" -b "cn=Users,dc=acme,dc=local"
+
+
+	# Jim Bo, Users, acme.local
+	dn: CN=Jim Bo,CN=Users,DC=acme,DC=local
+	objectClass: top
+	objectClass: person
+	objectClass: organizationalPerson
+	objectClass: user
+	cn: Jim Bo
+	sn: Bo
+	givenName: Jim
+	distinguishedName: CN=Jim Bo,CN=Users,DC=acme,DC=local
+	instanceType: 4
+	whenCreated: 20120622044450.0Z
+	whenChanged: 20120623042530.0Z
+	displayName: Jim Bo
+	uSNCreated: 28726
+	uSNChanged: 28878
+	name: Jim Bo
+	objectGUID:: LYhKi1P4T0ajXusIETMyQA==
+	userAccountControl: 66048
+	badPwdCount: 0
+	codePage: 0
+	countryCode: 0
+	badPasswordTime: 129848960997646000
+	lastLogoff: 0
+	lastLogon: 129848961041576000
+	pwdLastSet: 129848991309506000
+	primaryGroupID: 513
+	objectSid:: AQUAAAAAAAUVAAAAkCvIlqu3LasgA3CVUwQAAA==
+	accountExpires: 9223372036854775807
+	logonCount: 0
+	sAMAccountName: jimbo
+	sAMAccountType: 805306368
+	userPrincipalName: jimbo@acme.local
+	objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=acme,DC=local
+	dSCorePropagationData: 20120623025706.0Z
+	dSCorePropagationData: 20120622050823.0Z
+	dSCorePropagationData: 20120622044450.0Z
+	dSCorePropagationData: 16010101000416.0Z
+	lastLogonTimestamp: 129848959391996000
+	uid: jimbo
+	msSFU30Name: jimbo
+	msSFU30NisDomain: acme
+	uidNumber: 501
+	gidNumber: 100
+	unixHomeDirectory: /home/jimbo
+	loginShell: /bin/bash
+
+
+Now to map the important things to Linux, like uid, gid, homedir, shell, 
+gecos. The following goes into the clients `/etc/ldap.conf`.
+
+First, I set the base dn to search from, as well as my AD host.
+
+	host WIN-2BQ43FPHS3O.acme.local
+	base cn=Users,dc=acme,dc=local
+
+Second section maps attributes, LDAP attributes to AD attributes.
+
+	nss_map_attribute	uid		sAMAccountName
+	nss_map_attribute	uidNumber	uidNumber
+	nss_map_attribute	gidNumber	gidNumber
+	nss_map_attribute	gecos		cn
+	nss_map_attribute	homeDirectory	unixhomeDirectory
+	nss_map_attribute	loginShell	loginShell
+
+Third section maps objectclass, so the objectclasses that I used to map ldap 
+users to linux users in RHDS, I would map those to AD objectclasses, User and 
+Group. 
+
+	nss_map_objectclass		shadowAccount	User
+	nss_map_objectclass 	posixAccount	User
+	nss_map_objectclass		posixGroup		Group
+
+Next I wanted to map pam attributes. I map pams login name to sAMAccountName.
+
+	pam_login_attribute sAMAccountName
+	pam_filter objectclass=User
+
+### Pam Stuff
+
+Also, since we are authenticating against AD, we need to create a Unicode
+password in order to pass.
+
+	# Update Active Directory password, by
+	# creating Unicode password and updating
+	# unicodePwd attribute.
+	pam_password ad
+
+Filter by User objectclass with a base search starting at Users in the DIT.
+
+	# RFC2307bis naming contexts
+	# Syntax:
+	# nss_base_XXX          base?scope?filter
+	# where scope is {base,one,sub}
+	# and filter is a filter to be &'d with the
+	# default filter.
+	nss_base_passwd		CN=Users,DC=acme,DC=local
+
+### Bind things
+
+Finally, I want to add bind credentials so that I can actually bind and search
+the tree. 
+
+	binddn cn=Jim Bo,cn=Users,dc=acme,dc=local
+	bindpw Password!
+
+Additional, I added this so that I could actually look at the packets and
+troubleshoot when things went wrong. 
+
+	ssl no
+
+### Finally
+
+All together it looked like...
+
+	[root@client ~]# cat /etc/ldap.conf 
+
+	host WIN-2BQ43FPHS3O.acme.local
+	base cn=Users,dc=acme,dc=local
+
+	nss_map_attribute	uid		sAMAccountName
+	nss_map_attribute	uidNumber	uidNumber
+	nss_map_attribute	gidNumber	gidNumber
+	nss_map_attribute	gecos		cn
+	nss_map_attribute	homeDirectory	unixhomeDirectory
+	nss_map_attribute	loginShell	loginShell
+
+	nss_map_objectclass 	posixAccount	User
+	nss_map_objectclass		shadowAccount	User
+	nss_map_objectclass		posixGroup		Group
+
+	pam_login_attribute	sAMAccountName
+	pam_filter		objectclass=User
+	
+	# Update Active Directory password, by
+	# creating Unicode password and updating
+	# unicodePwd attribute.
+	pam_password		ad
+
+	# RFC2307bis naming contexts
+	# Syntax:
+	# nss_base_XXX          base?scope?filter
+	# where scope is {base,one,sub}
+	# and filter is a filter to be &'d with the
+	# default filter.
+	nss_base_passwd		CN=Users,DC=acme,DC=local
+
+	binddn cn=Jim Bo,cn=Users,dc=acme,dc=local
+	bindpw Password!
+	ssl no
+
+
+References: 
+
+[https://www.linux.com/learn/tutorials/442411-unite-your-linux-and-active-directory-authentication](https://www.linux.com/learn/tutorials/442411-unite-your-linux-and-active-directory-authentication) 2004 (things had to be updated for new ldap)
