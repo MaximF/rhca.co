@@ -3,3 +3,44 @@ title: Export specific user information to an LDIF file
 objective: 10
 category: EX423
 ---
+
+Easiest way to export user information is via `ldapsearch`. For example if I wanted to export just sAMAccountName for every user in Users:
+
+	ldapsearch -x -h 192.168.1.124 -W -D "cn=Jim \
+	Bo,cn=Users,DC=acme,DC=local" -b "cn=Users,dc=acme,dc=local" \
+	"(objectclass=User)" sAMAccountName >> users.ldif
+
+And that gives me only the information I need in LDIF format. 
+
+	# extended LDIF
+	#
+	# LDAPv3
+	# base <cn=Users,dc=acme,dc=local> with scope subtree
+	# filter: (objectclass=User)
+	# requesting: sAMAccountName 
+	#
+
+	# Administrator, Users, acme.local
+	dn: CN=Administrator,CN=Users,DC=acme,DC=local
+	sAMAccountName: Administrator
+
+	# Guest, Users, acme.local
+	dn: CN=Guest,CN=Users,DC=acme,DC=local
+	sAMAccountName: Guest
+
+	# krbtgt, Users, acme.local
+	dn: CN=krbtgt,CN=Users,DC=acme,DC=local
+	sAMAccountName: krbtgt
+
+	# Marc Johansen, Users, acme.local
+	dn: CN=Jim Bo,CN=Users,DC=acme,DC=local
+	sAMAccountName: jimbo
+
+	# search result
+	search: 2
+	result: 0 Success
+
+	# numResponses: 5
+	# numEntries: 4
+
+Beyond that I am not sure where else I could go with this objective. 
