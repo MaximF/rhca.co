@@ -21,7 +21,7 @@ category: EX423
 ## Setup Kerberos
 ----
 
-First step in this madness is installing a KDC and setting up Kerberos so that there is something to authenticate to. Most likely this isnt part of the exam, I can't imagine having to setup KDC, especially since its not in the objectives, but it can't hurt to go through it in practice.
+First step in this madness is installing a KDC and setting up Kerberos so that there is something to authenticate to. Most likely this isn't part of the exam, as I can't imagine having to setup KDC. It's not in the objectives, but it can't hurt to go through it in practice.
 
 ### Install packages
 ----
@@ -213,7 +213,12 @@ Because we have to do this all with SELinux enabled, we need to restore security
 
     [root@dc01 ~]# restorecon -v /etc/krb5.keytab 
 
-Now we add the server as a ds
+Now we add the server as a ldap host. (if we dont this then BAD THINGS HAPPEN)
+
+    kadmin:  ktadd -k /etc/ldap.keytab ldap/ldap3.acme.local
+    
+    [root@dc01 ~]# restorecon /etc/ldap.keytab 
+
 
 ### Configure SASL Identity Mapping
 
@@ -227,7 +232,7 @@ Couple things to do here to get this to work properly.
 
 in /etc/sysconfig/dirsvr and /etc/sysconfig/dirsrv-admin
 
-    KRB5_KTNAME=/etc/dirsrv/ds.keytab ; export KRB5_KTNAME
+    KRB5_KTNAME=/etc/dirsrv/ldap.keytab ; export KRB5_KTNAME
 
 **Second:** setup SASL/GSSAPI maps as described in the above [docs.redhat.com article](http://docs.redhat.com/docs/en-US/Red_Hat_Directory_Server/8.2/html/Administration_Guide/SASL.html)
 

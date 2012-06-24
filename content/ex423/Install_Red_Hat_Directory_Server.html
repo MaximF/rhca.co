@@ -42,7 +42,7 @@ On the step that asks for your default suffix, you would enter that in. Easy. So
 This is also in the setup script. As long this question is answered correctly during setup, and the password goes unforgotten, the objective is complete.
 
 
-The setup script generates a log files in /tmp called setupXXXXX.log, which will contain all of the input you give throughout the script. 
+The setup script generates a log file in /tmp called setupXXXXX.log, which will contain all of the input you give throughout the script. 
 
 For a full list of the questions for reference, here is a link to the redhat documentation regarding this setup:
 
@@ -84,7 +84,7 @@ First see what the settings are set at by running a sysctl -a.
 
 Now in the /etc/sysctl.conf, add in the above max setting, but change it to the recommended number, 64000. 
 
-	~]# echo "fs.file-max = 59512" >> /etc/sysctl.conf
+	~]# echo "fs.file-max = 64000" >> /etc/sysctl.conf
 
 The limits.conf file should also be altered in  /etc/security/limits.conf
 

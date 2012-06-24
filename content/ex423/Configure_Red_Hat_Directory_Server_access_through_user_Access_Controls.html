@@ -53,7 +53,7 @@ There are default acis setup when the server is setup.
 
 ## Creating ACIs
 
-ACIs have two main ways that they can come about. Manually via LDIF files or configured in the GUI. GUI allows for confiration as well as shows the raw syntax that makes up your final rule. 
+ACIs have two main ways that they can come about. Manually via LDIF files or configured in the GUI. GUI allows for configuration as well as shows the raw syntax that makes up your final rule. 
 
 ### Creating ACIs Manually
 
@@ -83,7 +83,7 @@ Instructions for the gui are here: [referenced article](http://docs.redhat.com/d
 
 ### Example
 
-Before and After. Before I went in and removed anonymous read access to email, anyone could a users email with s simple query. As seen below.
+Before and After. Before I went in and removed anonymous read access to email, anyone could see a users email with s simple query. As seen below.
 
     [ice@client03 ~]$ ldapsearch -x -s sub -b "dc=makewhatis,dc=local" "cn=ice" mail
     # extended LDIF
